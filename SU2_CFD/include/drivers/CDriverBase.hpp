@@ -407,6 +407,20 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Set the initial modal force.
+   * \note This is important for flutter analysis, e.g., to compute modal force.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] ModeShape - Node Mode Shape (nDim).
+   */
+
+  inline void SetModalForce_Initial(unsigned short iMarker, su2double ModalForce_Initial) {
+
+    solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->SetModalForce_Initial(iMarker, ModalForce_Initial);
+
+  }
+
+  /*!
    * \brief Get the mesh velocities currently imposed on a marker vertex.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.

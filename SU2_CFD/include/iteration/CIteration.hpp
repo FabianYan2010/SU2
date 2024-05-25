@@ -295,4 +295,6 @@ class CIteration {
 
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
+
+  void ComputeModalForce(CGeometry** geometry, CSolver*** solver, CConfig* config);                            
 };

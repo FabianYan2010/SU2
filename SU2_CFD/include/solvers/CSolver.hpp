@@ -103,6 +103,10 @@ protected:
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
 
+  su2double ModalForce[16]={0.0};
+  su2double ModalForce_Initial[16]={0.0};
+
+
   /*--- Variables that need to go. ---*/
 
   su2double *Residual,      /*!< \brief Auxiliary nVar vector. */
@@ -4326,6 +4330,18 @@ public:
     }
     END_SU2_OMP_FOR
   }
+
+  inline void SetModalForce(unsigned short val_iBlade, su2double val_modalforce) {
+    ModalForce[val_iBlade] = val_modalforce;
+  }
+
+  inline void SetModalForce_Initial(unsigned short val_iBlade, su2double val_modalforce) {
+    ModalForce_Initial[val_iBlade] = val_modalforce;
+  }
+
+  inline su2double GetModalForce(unsigned short val_iBlade) const { return ModalForce[val_iBlade]; }
+
+  inline su2double GetModalForce_Initial(unsigned short val_iBlade) const { return ModalForce_Initial[val_iBlade]; }
 
 protected:
   /*!
