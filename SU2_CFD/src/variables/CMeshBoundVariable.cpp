@@ -44,6 +44,7 @@ void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
   /*--- Allocate ---*/
 
   Boundary_Displacement.resize(nBoundPt,nDim) = su2double(0.0);
+  Boundary_ModeShape.resize(nBoundPt,nDim) = su2double(0.0);
   if (config->GetTime_Domain()) Boundary_Velocity.resize(nBoundPt,nDim) = su2double(0.0);
 }
 

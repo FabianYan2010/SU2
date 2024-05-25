@@ -2084,6 +2084,18 @@ public:
   inline virtual void SetBound_Disp(unsigned long iPoint, unsigned long iDim, const su2double val_BoundDisp) { }
 
   /*!
+   * \brief A virtual member. Set the boundary mode shape.
+   * \param[in] val_BoundModeShape - Pointer to the boundary mode shape.
+   */
+  inline virtual void SetBound_ModeShape(unsigned long iPoint, unsigned long iDim, const su2double val_BoundModeShape) { }
+
+  /*!
+   * \brief A virtual member. Get the value of the mode shape at the boundary.
+   * \return Value of the boundary mode shape.
+   */
+  inline virtual su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
    * \brief A virtual member. Set the boundary velocity.
    * \param[in] iDim - Index of the dimension of interest.
    * \param[in] val_BoundVel - Value of the boundary velocity.

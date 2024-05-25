@@ -387,6 +387,25 @@ class CDriverBase {
     }
   }
 
+
+  /*!
+   * \brief Set the mode shape of a blade vertex.
+   * \note This is important for flutter analysis, e.g., to compute modal force.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] ModeShape - Node Mode Shape (nDim).
+   */
+
+  inline void SetMeshModeShape(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> ModeShape) {
+
+    const auto iPoint = GetMarkerNode(iMarker, iVertex);
+    auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
+
+    for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
+      nodes->SetBound_ModeShape(iPoint, iDim, ModeShape[iDim]);
+    }
+  }
+
   /*!
    * \brief Get the mesh velocities currently imposed on a marker vertex.
    * \param[in] iMarker - Marker index.

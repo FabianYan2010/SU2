@@ -36,6 +36,7 @@ private:
 
   MatrixType Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
   MatrixType Boundary_Velocity;      /*!< \brief Store the boundary velocities of the mesh. */
+  MatrixType Boundary_ModeShape;      /*!< \brief Store the mode shape of the blade mesh. */
   CVertexMap<unsigned> VertexMap;    /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
@@ -85,6 +86,24 @@ public:
   inline void SetBound_Disp(unsigned long iPoint, unsigned long iDim, su2double val_BoundDisp) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     Boundary_Displacement(iPoint,iDim) = val_BoundDisp;
+  }
+
+  /*!
+   * \brief Set the boundary mode shape.
+   * \param[in] val_BoundModeShape - Pointer to the boundary mode shape.
+   */
+  inline void SetBound_ModeShape(unsigned long iPoint, unsigned long iDim, su2double val_BoundModeShape) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    Boundary_ModeShape(iPoint,iDim) = val_BoundModeShape;
+  }
+
+  /*!
+   * \brief Get the value of the mode shape at the boundary.
+   * \return Value of the boundary mode shape.
+   */
+  inline su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Boundary_ModeShape(iPoint,iDim);
   }
 
   /*!
