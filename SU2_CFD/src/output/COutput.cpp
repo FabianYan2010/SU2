@@ -233,6 +233,9 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 
   if (config[ZONE_0]->GetMultizone_Problem())
     Iter = OuterIter;
+
+  if (config[ZONE_0]->GetTime_Domain())
+    Iter = TimeIter;
     
   /*--- Turbomachinery Performance Screen summary output---*/
   if (Iter%100 == 0 && rank == MASTER_NODE) {
