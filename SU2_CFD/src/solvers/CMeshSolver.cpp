@@ -633,17 +633,43 @@ void CMeshSolver::ComputeGridVelocity(CGeometry **geometry, const CConfig *confi
     const su2double* Disp_n   = nodes->GetSolution_time_n(iPoint);
     const su2double* Disp_nP1 = nodes->GetSolution(iPoint);
 
+    const bool rotating_frame = config->GetRotating_Frame();
+	  const su2double *RigidMotion_GridVel;
+	  RigidMotion_GridVel = geometry[MESH_0]->nodes->GetGridVel(iPoint);
+
     /*--- Compute mesh velocity for this point with 1st or 2nd-order approximation. ---*/
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double GridVel = 0.0;
+      su2double GridVel_RotatingFrame = 0.0;
+      su2double GridVel_StationaryFrame = 0.0;
+
       if (firstOrder)
         GridVel = (Disp_nP1[iDim] - Disp_n[iDim]) * invTimeStep;
       else if (secondOrder)
         GridVel = (1.5*Disp_nP1[iDim] - 2.0*Disp_n[iDim] + 0.5*Disp_nM1[iDim]) * invTimeStep;
+      
+      //geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, GridVel);
+      //if ((iPoint>280 && iPoint<300)&&iDim ==0) 
+      //  cout<<"iPoint "<<iPoint<<" GridVel "<<GridVel<<endl;
+
+         
+      //nodes->SetSolution_Vel(iPoint, iDim, GridVel);
+    
+      /*--- plus rigid motion vel when rel frame is used ---*/
+      if (rotating_frame){
+        GridVel = RigidMotion_GridVel[iDim] + GridVel;
+      
+      /*if ((iPoint>280 && iPoint<300)&&iDim ==0)
+        cout<<" RigidMotion_GridVel "<<RigidMotion_GridVel[iDim]
+        <<" GridVel_StationaryFrame "<<GridVel_StationaryFrame
+        <<endl;
+      */
+      }
 
       geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, GridVel);
+
     }
   }
   END_SU2_OMP_FOR
@@ -1526,3 +1552,61 @@ void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsi
     config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
 }
+
+
+void CMeshSolver::SetMode_Disp(unsigned short iMode, const su2double valdisp){
+    ModeDisp[iMode] = valdisp;
+}
+
+void CMeshSolver::Initialize_ModeSuperposition(unsigned short valNmode){
+  
+  nMode=valNmode;
+  cout<<" rank "<<rank<<" Initialize_ModeSuperposition, nMode "<<nMode<<endl;
+  /*--- initialize mode displacement pointer ---*/
+  ModeDisp = new su2double[nMode];
+  ModalForce = new su2double[nMode];
+  for (auto iMode=0; iMode < nMode; iMode++){
+    ModeDisp[iMode] = 0;
+    ModalForce[iMode] = 0;
+    //cout<<" rank "<<rank<<" c++ Initialize_ModeSuperposition ModalForce "<<ModalForce[iMode]<<endl;
+  }
+}
+
+void CMeshSolver::ComputeNode_Disp(CGeometry *geometry, CConfig* config){
+  
+  su2double ModeShape[3] = {0.0};
+
+  /*--- loop through points on blade surface ---*/
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+        (config->GetMarker_All_Moving(iMarker) == YES)) {
+
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->nodes->GetDomain(iPoint)){
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            
+            su2double disp=0.0;
+            su2double mode_disp=0.0;
+            
+            for (auto iMode = 0; iMode < nMode; iMode++) {
+              mode_disp=GetMode_Disp(iMode);
+              //ModeShape needs to be changed to matrix to involve different modes
+              ModeShape[iDim] = GetNodes()->GetBound_ModeShape(iPoint,iDim);
+              disp+=ModeShape[iDim]*mode_disp;
+            }
+
+            GetNodes()->SetBound_Disp(iPoint, iDim, disp);
+          }
+          /*auto* nodes = solver[MESH_0][MESH_SOL]->GetNodes();
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            nodes->SetBound_Disp(iPoint, iDim, ModeShape[iDim]*q);
+          }*/
+        }
+      }
+    }
+  }    
+}
+

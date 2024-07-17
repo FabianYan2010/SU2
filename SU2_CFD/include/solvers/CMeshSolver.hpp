@@ -141,6 +141,35 @@ public:
                          CConfig *config) override;
 
   /*!
+   * \brief Set the mode displacement for mode superposition method.
+   * \param[in] iMode - Mode index.
+   * \param[in] valdisp - Displacement value to be assigned. 
+   */
+  void SetMode_Disp(unsigned short iMode,
+                    const su2double valdisp) override;
+
+  /*!
+   * \brief Get the mode displacement for mode superposition method.
+   * \param[in] iMode - Mode index.
+   * \param[in] iDim - Dimension required. 
+   */
+  inline su2double GetMode_Disp(unsigned short iMode){return ModeDisp[iMode];}                    
+
+  /*!
+   * \brief Initialize the mode superposition method.
+   * \param[in] valNmode - Number of mode.
+   */
+  void Initialize_ModeSuperposition(unsigned short valNmode) override;
+
+  /*!
+   * \brief Compute the blade displacement with mode superposition method.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the mesh solver. 
+   * \param[in] config - Definition of the particular problem.   
+   */
+  void ComputeNode_Disp(CGeometry *geometry, CConfig* config) override;
+
+  /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.

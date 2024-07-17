@@ -103,9 +103,10 @@ protected:
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
 
-  su2double ModalForce[16]={0.0};
+  su2double *ModalForce;
   su2double ModalForce_Initial[16]={0.0};
-
+  su2double *ModeDisp;                   /*!< \brief Vector to store the mode displacement */
+  unsigned short nMode = 0;               /*!< \brief the number of modes for mode-superposition method */
 
   /*--- Variables that need to go. ---*/
 
@@ -4142,6 +4143,28 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] iMode - Mode index.
+   * \param[in] valdisp - Displacement value to be assigned. 
+   */
+  inline virtual void SetMode_Disp(unsigned short iMode,
+                                   const su2double valdisp) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] valNmode - the mode displacement.
+   */
+  inline virtual void Initialize_ModeSuperposition(unsigned short valNmode) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the mesh solver. 
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeNode_Disp(CGeometry *geometry, CConfig* config) { }
+
+  /*!
+   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
    * \param[in] numerics - the numerics for this problem.
@@ -4331,15 +4354,15 @@ public:
     END_SU2_OMP_FOR
   }
 
-  inline void SetModalForce(unsigned short val_iBlade, su2double val_modalforce) {
-    ModalForce[val_iBlade] = val_modalforce;
+  inline void SetModalForce(unsigned short val_iMode, su2double val_modalforce) {
+    ModalForce[val_iMode] = val_modalforce;
   }
 
   inline void SetModalForce_Initial(unsigned short val_iBlade, su2double val_modalforce) {
     ModalForce_Initial[val_iBlade] = val_modalforce;
   }
 
-  inline su2double GetModalForce(unsigned short val_iBlade) const { return ModalForce[val_iBlade]; }
+  inline su2double GetModalForce(unsigned short val_iMode) const { return ModalForce[val_iMode]; }
 
   inline su2double GetModalForce_Initial(unsigned short val_iBlade) const { return ModalForce_Initial[val_iBlade]; }
 

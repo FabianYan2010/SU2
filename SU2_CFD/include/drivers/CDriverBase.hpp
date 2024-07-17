@@ -387,6 +387,51 @@ class CDriverBase {
     }
   }
 
+  /*!
+   * \brief Set the mode displacements of a blade.
+   * \note This can be the input of the flow solver in an FSI setting.
+   * \param[in] iMode - Mode index.
+   * \param[in] value - Mode displacement.
+   */
+  inline void SetModeDisplacement(unsigned short iMode, passivedouble value) {
+
+    GetSolverAndCheckMarker(MESH_SOL)->SetMode_Disp(iMode, value);
+    cout<<" SetModeDisplacement iMode "<<iMode<<" disp "<<value<<endl;
+
+  }
+
+  /*!
+   * \brief Get the modal force from fluid solver.
+   * \param[in] iMode - Mode index.
+   */
+  inline passivedouble GetModalForce(unsigned short iMode) {
+
+    return GetSolverAndCheckMarker(MESH_SOL)->GetModalForce(iMode);
+
+  }
+
+  /*!
+   * \brief Compute the node displacements of a blade.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Node displacements (nDim).
+   */
+  inline void ComputeNode_Disp(void) {
+
+    GetSolverAndCheckMarker(MESH_SOL)->ComputeNode_Disp(main_geometry, main_config);
+    cout<<"ComputeNode_Disp"<<endl;
+  }
+
+  /*!
+   * \brief Initialize the mode superposition method.
+   * \param[in] valNmode - Number of mode.
+   */
+  inline void Initialize_ModeSuperposition(unsigned short valNmode) {
+
+    GetSolverAndCheckMarker(MESH_SOL)->Initialize_ModeSuperposition(valNmode);
+    
+  }
+
 
   /*!
    * \brief Set the mode shape of a blade vertex.

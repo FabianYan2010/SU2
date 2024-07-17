@@ -87,6 +87,8 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   Jacobian_ji        = nullptr;
   Jacobian_jj        = nullptr;
   base_nodes         = nullptr;
+  ModeDisp           = nullptr;
+  ModalForce         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
 
@@ -180,6 +182,14 @@ CSolver::~CSolver() {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
+  }
+
+  if (ModeDisp != nullptr) {
+    delete [] ModeDisp;
+  }
+
+  if (ModalForce != nullptr) {
+    delete [] ModalForce;
   }
 
   Restart_Vars = decltype(Restart_Vars){};

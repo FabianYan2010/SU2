@@ -213,16 +213,20 @@ void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** so
 
 void CIteration::ComputeModalForce(CGeometry** geometry, CSolver*** solver, CConfig* config) {
 
-  su2double ModalForce, ModalForce_Local, NormalModeShape, Pressure;
+  su2double ModalForce_AllBlades=0.0, modalforce_allblades_local, modalforce_local, NormalModeShape, Pressure;
   su2double *Normal, ModeShape[3] = {0.0}, Disp[3] = {0.0};
   unsigned short nDim = geometry[MESH_0]->GetnDim();
-
-
+  
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+ 
+    modalforce_local = 0;  
+
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
-        (config->GetMarker_All_Moving(iMarker) == YES)) {
+        (config->GetMarker_All_Moving(iMarker) == YES)) { 
 
       for (auto iVertex = 0ul; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+        
+        NormalModeShape = 0;
 
         auto iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
         
@@ -236,18 +240,21 @@ void CIteration::ComputeModalForce(CGeometry** geometry, CSolver*** solver, CCon
             NormalModeShape += ModeShape[iDim]*Normal[iDim];
           }
           NormalModeShape = NormalModeShape*Pressure;
-          ModalForce_Local += NormalModeShape;
-          
+          modalforce_local += NormalModeShape;
         }
       }
     }
-    // collect ModalForce from all processors
-    SU2_OMP_MASTER
-    {
-      SU2_MPI::Allreduce(&ModalForce_Local, &ModalForce, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    }
-    SU2_OMP_BARRIER
-
-    solver[MESH_0][FLOW_SOL]->SetModalForce(iMarker, ModalForce);
+    modalforce_allblades_local += modalforce_local;
   }
+
+  // collect modalforce from all processors
+  SU2_OMP_MASTER
+  {
+    SU2_MPI::Allreduce(&modalforce_allblades_local, &ModalForce_AllBlades, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  }
+  SU2_OMP_BARRIER
+
+  unsigned short iMode = 0;
+  //solver[MESH_0][FLOW_SOL]->SetModalForce(iMode, ModalForce_AllBlades);
+  solver[MESH_0][MESH_SOL]->SetModalForce(iMode, ModalForce_AllBlades);
 }
