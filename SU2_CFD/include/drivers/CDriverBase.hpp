@@ -396,7 +396,6 @@ class CDriverBase {
   inline void SetModeDisplacement(unsigned short iMode, passivedouble value) {
 
     GetSolverAndCheckMarker(MESH_SOL)->SetMode_Disp(iMode, value);
-    cout<<" SetModeDisplacement iMode "<<iMode<<" disp "<<value<<endl;
 
   }
 
@@ -419,7 +418,7 @@ class CDriverBase {
   inline void ComputeNode_Disp(void) {
 
     GetSolverAndCheckMarker(MESH_SOL)->ComputeNode_Disp(main_geometry, main_config);
-    cout<<"ComputeNode_Disp"<<endl;
+
   }
 
   /*!
@@ -441,13 +440,13 @@ class CDriverBase {
    * \param[in] ModeShape - Node Mode Shape (nDim).
    */
 
-  inline void SetMeshModeShape(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> ModeShape) {
+  inline void SetMeshModeShape(unsigned short iMarker, unsigned long iMode, unsigned long iVertex, vector<passivedouble> ModeShape) {
 
     const auto iPoint = GetMarkerNode(iMarker, iVertex);
     auto* nodes = GetSolverAndCheckMarker(MESH_SOL)->GetNodes();
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); iDim++) {
-      nodes->SetBound_ModeShape(iPoint, iDim, ModeShape[iDim]);
+      nodes->SetBound_ModeShape(iPoint, iMode, iDim, ModeShape[iDim]);
     }
   }
 

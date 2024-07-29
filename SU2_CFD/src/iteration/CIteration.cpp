@@ -216,45 +216,46 @@ void CIteration::ComputeModalForce(CGeometry** geometry, CSolver*** solver, CCon
   su2double ModalForce_AllBlades=0.0, modalforce_allblades_local, modalforce_local, NormalModeShape, Pressure;
   su2double *Normal, ModeShape[3] = {0.0}, Disp[3] = {0.0};
   unsigned short nDim = geometry[MESH_0]->GetnDim();
+  for (unsigned short iMode = 0; iMode < solver[MESH_0][MESH_SOL]->GetnMode(); iMode++) {
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
   
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
- 
-    modalforce_local = 0;  
+      modalforce_local = 0;  
 
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
-        (config->GetMarker_All_Moving(iMarker) == YES)) { 
+      if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+          (config->GetMarker_All_Moving(iMarker) == YES)) { 
 
-      for (auto iVertex = 0ul; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-        
-        NormalModeShape = 0;
+        for (auto iVertex = 0ul; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+          
+          NormalModeShape = 0;
 
-        auto iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry[MESH_0]->nodes->GetDomain(iPoint)){
+          auto iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+          
+          if (geometry[MESH_0]->nodes->GetDomain(iPoint)){
 
-          Pressure = solver[MESH_0][FLOW_SOL]->GetNodes()->GetPressure(iPoint);
-          Normal = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-          for (auto iDim = 0; iDim < nDim; iDim++) {
-            ModeShape[iDim] = solver[MESH_0][MESH_SOL]->GetNodes()->GetBound_ModeShape(iPoint,iDim);
-            //Disp[iDim] = solver[MESH_0][MESH_SOL]->LinSysSol(iPoint, iDim);
-            NormalModeShape += ModeShape[iDim]*Normal[iDim];
+            Pressure = solver[MESH_0][FLOW_SOL]->GetNodes()->GetPressure(iPoint);
+            Normal = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNormal();
+            for (auto iDim = 0; iDim < nDim; iDim++) {
+              ModeShape[iDim] = solver[MESH_0][MESH_SOL]->GetNodes()->GetBound_ModeShape(iPoint,iMode,iDim);
+              //Disp[iDim] = solver[MESH_0][MESH_SOL]->LinSysSol(iPoint, iDim);
+              NormalModeShape += ModeShape[iDim]*Normal[iDim];
+            }
+            NormalModeShape = NormalModeShape*Pressure;
+            modalforce_local += NormalModeShape;
           }
-          NormalModeShape = NormalModeShape*Pressure;
-          modalforce_local += NormalModeShape;
         }
       }
+      modalforce_allblades_local += modalforce_local;
     }
-    modalforce_allblades_local += modalforce_local;
-  }
 
-  // collect modalforce from all processors
-  SU2_OMP_MASTER
-  {
-    SU2_MPI::Allreduce(&modalforce_allblades_local, &ModalForce_AllBlades, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    // collect modalforce from all processors
+    SU2_OMP_MASTER
+    {
+      SU2_MPI::Allreduce(&modalforce_allblades_local, &ModalForce_AllBlades, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    }
+    SU2_OMP_BARRIER
+    if(rank == MASTER_NODE) cout<<" ComputeModalForce ModalForce_AllBlades "<<ModalForce_AllBlades<<endl;
+    //unsigned short iMode = 0;
+    //solver[MESH_0][FLOW_SOL]->SetModalForce(iMode, ModalForce_AllBlades);
+    solver[MESH_0][MESH_SOL]->SetModalForce(iMode, ModalForce_AllBlades);
   }
-  SU2_OMP_BARRIER
-
-  unsigned short iMode = 0;
-  //solver[MESH_0][FLOW_SOL]->SetModalForce(iMode, ModalForce_AllBlades);
-  solver[MESH_0][MESH_SOL]->SetModalForce(iMode, ModalForce_AllBlades);
 }

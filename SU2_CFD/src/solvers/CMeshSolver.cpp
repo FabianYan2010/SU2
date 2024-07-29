@@ -1568,8 +1568,10 @@ void CMeshSolver::Initialize_ModeSuperposition(unsigned short valNmode){
   for (auto iMode=0; iMode < nMode; iMode++){
     ModeDisp[iMode] = 0;
     ModalForce[iMode] = 0;
-    //cout<<" rank "<<rank<<" c++ Initialize_ModeSuperposition ModalForce "<<ModalForce[iMode]<<endl;
   }
+
+  GetNodes()->Initialize_ModeshapeMatrix(nMode);
+
 }
 
 void CMeshSolver::ComputeNode_Disp(CGeometry *geometry, CConfig* config){
@@ -1594,7 +1596,7 @@ void CMeshSolver::ComputeNode_Disp(CGeometry *geometry, CConfig* config){
             for (auto iMode = 0; iMode < nMode; iMode++) {
               mode_disp=GetMode_Disp(iMode);
               //ModeShape needs to be changed to matrix to involve different modes
-              ModeShape[iDim] = GetNodes()->GetBound_ModeShape(iPoint,iDim);
+              ModeShape[iDim] = GetNodes()->GetBound_ModeShape(iPoint,iMode,iDim);
               disp+=ModeShape[iDim]*mode_disp;
             }
 

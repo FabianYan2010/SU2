@@ -2084,16 +2084,26 @@ public:
   inline virtual void SetBound_Disp(unsigned long iPoint, unsigned long iDim, const su2double val_BoundDisp) { }
 
   /*!
+   * \brief A virtual member. Initialize the mode shape matrix.
+   * \param[in] val_nMode - Value of the number of vibration modes.
+   */
+  inline virtual void Initialize_ModeshapeMatrix(su2double val_nMode) { }
+
+  /*!
    * \brief A virtual member. Set the boundary mode shape.
+   * \param[in] iMode - Index of the vibration mode.
+   * \param[in] iDim - Index of the dimension of interest.
    * \param[in] val_BoundModeShape - Pointer to the boundary mode shape.
    */
-  inline virtual void SetBound_ModeShape(unsigned long iPoint, unsigned long iDim, const su2double val_BoundModeShape) { }
+  inline virtual void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, const su2double val_BoundModeShape) { }
 
   /*!
    * \brief A virtual member. Get the value of the mode shape at the boundary.
+   * \param[in] iMode - Index of the vibration mode.
+   * \param[in] iDim - Index of the dimension of interest.
    * \return Value of the boundary mode shape.
    */
-  inline virtual su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the boundary velocity.

@@ -36,8 +36,10 @@ private:
 
   MatrixType Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
   MatrixType Boundary_Velocity;      /*!< \brief Store the boundary velocities of the mesh. */
-  MatrixType Boundary_ModeShape;      /*!< \brief Store the mode shape of the blade mesh. */
+  C3DDoubleMatrix Boundary_ModeShape;      /*!< \brief Store the mode shape of the blade mesh. */
   CVertexMap<unsigned> VertexMap;    /*!< \brief Object that controls accesses to the variables of this class. */
+  
+  unsigned long nMode = 0;      /*!< \brief Number of dimension of the problem. */
 
 public:
 
@@ -89,21 +91,39 @@ public:
   }
 
   /*!
-   * \brief Set the boundary mode shape.
-   * \param[in] val_BoundModeShape - Pointer to the boundary mode shape.
+   * \brief Initialize the mode shape matrix.
+   * \param[in] val_nMode - Value of the number of vibration modes.
    */
-  inline void SetBound_ModeShape(unsigned long iPoint, unsigned long iDim, su2double val_BoundModeShape) override {
+  inline void Initialize_ModeshapeMatrix(su2double val_nMode) override {
+    nMode = val_nMode;
+    cout<<"Initialize_ModeshapeMatrix nMode "<<nMode<<endl;
+    /*--- resize the modeshape matrix ---*/
+    
+    unsigned long nBoundPt = Boundary_ModeShape.length();
+    //unsigned long nBoundPt = VertexMap.Build();
+    cout<<"Initialize_ModeshapeMatrix nBoundPt "<<nBoundPt<<endl;
+    
+    //cout<<"Initialize_ModeshapeMatrix size "<<Boundary_ModeShape.size()<<" length "<<Boundary_ModeShape.length()
+    //<<" rows "<<Boundary_ModeShape.rows()<<" cols "<<Boundary_ModeShape.cols()<<endl;
+    Boundary_ModeShape.resize(nBoundPt,nMode,nDim,0.0);
+  }
+
+  /*!
+   * \brief Set the boundary mode shape.
+   * \param[in] val_BoundModeShape - value of the boundary mode shape.
+   */
+  inline void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, su2double val_BoundModeShape) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
-    Boundary_ModeShape(iPoint,iDim) = val_BoundModeShape;
+    Boundary_ModeShape(iPoint,iMode,iDim) = val_BoundModeShape;
   }
 
   /*!
    * \brief Get the value of the mode shape at the boundary.
    * \return Value of the boundary mode shape.
    */
-  inline su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iDim) const override {
+  inline su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
-    return Boundary_ModeShape(iPoint,iDim);
+    return Boundary_ModeShape(iPoint,iMode,iDim);
   }
 
   /*!

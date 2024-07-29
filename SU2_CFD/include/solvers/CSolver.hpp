@@ -4353,7 +4353,12 @@ public:
     }
     END_SU2_OMP_FOR
   }
-
+  
+  /*!
+   * \brief Set the modal force
+   * \param[in] val_iMode   - index of the vibration mode. 
+   * \param[in] val_modalforce   - value of modal force. 
+   */
   inline void SetModalForce(unsigned short val_iMode, su2double val_modalforce) {
     ModalForce[val_iMode] = val_modalforce;
   }
@@ -4362,9 +4367,20 @@ public:
     ModalForce_Initial[val_iBlade] = val_modalforce;
   }
 
+  /*!
+   * \brief Get the modal force
+   * \param[in] val_iMode   - index of the vibration mode. 
+   * \return 
+   */
   inline su2double GetModalForce(unsigned short val_iMode) const { return ModalForce[val_iMode]; }
 
   inline su2double GetModalForce_Initial(unsigned short val_iBlade) const { return ModalForce_Initial[val_iBlade]; }
+  
+  /*!
+   * \brief Get number of the vibration modes
+   * \return 
+   */
+  inline su2double GetnMode() const { return nMode; }
 
 protected:
   /*!
