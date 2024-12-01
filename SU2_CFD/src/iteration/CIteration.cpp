@@ -239,7 +239,7 @@ void CIteration::ComputeModalForce(CGeometry** geometry, CSolver*** solver, CCon
               //Disp[iDim] = solver[MESH_0][MESH_SOL]->LinSysSol(iPoint, iDim);
               NormalModeShape += ModeShape[iDim]*Normal[iDim];
             }
-            NormalModeShape = NormalModeShape*Pressure;
+            NormalModeShape = NormalModeShape*-Pressure;
             modalforce_local += NormalModeShape;
           }
         }
