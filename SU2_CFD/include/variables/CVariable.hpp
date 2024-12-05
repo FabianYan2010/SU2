@@ -2087,7 +2087,7 @@ public:
    * \brief A virtual member. Initialize the mode shape matrix.
    * \param[in] val_nMode - Value of the number of vibration modes.
    */
-  inline virtual void Initialize_ModeshapeMatrix(su2double val_nMode) { }
+  inline virtual void Initialize_ModeshapeMatrix(unsigned short val_nMode) { }
 
   /*!
    * \brief A virtual member. Set the boundary mode shape.
@@ -2096,6 +2096,12 @@ public:
    * \param[in] val_BoundModeShape - Pointer to the boundary mode shape.
    */
   inline virtual void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, const su2double val_BoundModeShape) { }
+
+  /*!
+   * \brief A virtual member. Set the blade index for flutter analysis.
+   * \param[in] val_BladeID - Value of the blade index.
+   */
+  inline virtual void SetBound_BladeID(unsigned long iPoint, unsigned short val_BladeID) { }
 
   /*!
    * \brief A virtual member. Get the value of the mode shape at the boundary.

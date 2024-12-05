@@ -34,12 +34,15 @@
 class CMeshBoundVariable final : public CMeshVariable {
 private:
 
-  MatrixType Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
-  MatrixType Boundary_Velocity;      /*!< \brief Store the boundary velocities of the mesh. */
-  C3DDoubleMatrix Boundary_ModeShape;      /*!< \brief Store the mode shape of the blade mesh. */
-  CVertexMap<unsigned> VertexMap;    /*!< \brief Object that controls accesses to the variables of this class. */
-  
+  MatrixType Boundary_Displacement;     /*!< \brief Store the reference coordinates of the mesh. */
+  MatrixType Boundary_Velocity;         /*!< \brief Store the boundary velocities of the mesh. */
+  C3DDoubleMatrix Boundary_ModeShape;   /*!< \brief Store the mode shape of the blade mesh. */
+  CVertexMap<unsigned> VertexMap;       /*!< \brief Object that controls accesses to the variables of this class. */
+  su2vector<unsigned short> Boundary_BladeID;   /*!< \brief Store the blade index. */
+
+
   unsigned long nMode = 0;      /*!< \brief Number of dimension of the problem. */
+  unsigned long nBlade = 0;      /*!< \brief Number of blades taken into consideration. */
 
 public:
 
@@ -94,7 +97,7 @@ public:
    * \brief Initialize the mode shape matrix.
    * \param[in] val_nMode - Value of the number of vibration modes.
    */
-  inline void Initialize_ModeshapeMatrix(su2double val_nMode) override {
+  inline void Initialize_ModeshapeMatrix(unsigned short val_nMode) override {
     nMode = val_nMode;
     cout<<"Initialize_ModeshapeMatrix nMode "<<nMode<<endl;
     /*--- resize the modeshape matrix ---*/
@@ -115,6 +118,15 @@ public:
   inline void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, su2double val_BoundModeShape) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     Boundary_ModeShape(iPoint,iMode,iDim) = val_BoundModeShape;
+  }
+
+  /*!
+   * \brief Set the blade index for flutter analysis.
+   * \param[in] val_BladeID - Value of the blade index.
+   */
+  inline virtual void SetBound_BladeID(unsigned long iPoint, unsigned short val_BladeID) { 
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    Boundary_BladeID(iPoint) = val_BladeID;
   }
 
   /*!
