@@ -400,6 +400,18 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Set the eigenfrequency of each mode.
+   * \note This can be the input of the flow solver in an FSI setting.
+   * \param[in] iMode - Mode index.
+   * \param[in] value - Mode displacement.
+   */
+  inline void SetModeFrequency(unsigned short iMode, passivedouble value) {
+
+    GetSolverAndCheckMarker(MESH_SOL)->SetMode_Frq(iMode, value);
+
+  }
+
+  /*!
    * \brief Get the modal force from fluid solver.
    * \param[in] iMode - Mode index.
    */

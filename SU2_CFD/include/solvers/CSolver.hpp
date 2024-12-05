@@ -103,7 +103,8 @@ protected:
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
 
-  su2double *ModalForce;
+  su2double *ModalForce;                /*!< \brief Vector to store the mode shape */
+  su2double *ModeFrq;                   /*!< \brief Vector to store the mode frequency */
   su2double ModalForce_Initial[16]={0.0};
   su2double *ModeDisp;                   /*!< \brief Vector to store the mode displacement */
   unsigned short nMode = 0;               /*!< \brief the number of modes for mode-superposition method */
@@ -4148,6 +4149,14 @@ public:
    */
   inline virtual void SetMode_Disp(unsigned short iMode,
                                    const su2double valdisp) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iMode - Mode index.
+   * \param[in] valfrq - Frequency value to be assigned. 
+   */
+  inline virtual void SetMode_Frq(unsigned short iMode,
+                                   const su2double valfrq) { }
 
   /*!
    * \brief A virtual member.

@@ -89,6 +89,7 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   base_nodes         = nullptr;
   ModeDisp           = nullptr;
   ModalForce         = nullptr;
+  ModeFrq            = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
 
@@ -190,6 +191,10 @@ CSolver::~CSolver() {
 
   if (ModalForce != nullptr) {
     delete [] ModalForce;
+  }
+
+  if (ModeFrq != nullptr) {
+    delete [] ModeFrq;
   }
 
   Restart_Vars = decltype(Restart_Vars){};

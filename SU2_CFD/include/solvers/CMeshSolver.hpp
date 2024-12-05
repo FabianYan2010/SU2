@@ -149,11 +149,26 @@ public:
                     const su2double valdisp) override;
 
   /*!
+   * \brief Set the mode displacement for mode superposition method.
+   * \param[in] iMode - Mode index.
+   * \param[in] valfrq - Frequency value to be assigned. 
+   */
+  void SetMode_Frq(unsigned short iMode,
+                    const su2double valfrq) override;
+
+  /*!
    * \brief Get the mode displacement for mode superposition method.
    * \param[in] iMode - Mode index.
    * \param[in] iDim - Dimension required. 
    */
-  inline su2double GetMode_Disp(unsigned short iMode){return ModeDisp[iMode];}                    
+  inline su2double GetMode_Disp(unsigned short iMode){return ModeDisp[iMode];}
+
+    /*!
+   * \brief Get the mode frequency for mode superposition method.
+   * \param[in] iMode - Mode index.
+   * \param[in] iDim - Dimension required. 
+   */
+  inline su2double GetMode_Frq(unsigned short iMode){return ModeFrq[iMode];}                     
 
   /*!
    * \brief Initialize the mode superposition method.

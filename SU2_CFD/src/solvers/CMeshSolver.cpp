@@ -1558,6 +1558,10 @@ void CMeshSolver::SetMode_Disp(unsigned short iMode, const su2double valdisp){
     ModeDisp[iMode] = valdisp;
 }
 
+void CMeshSolver::SetMode_Frq(unsigned short iMode, const su2double valfrq){
+    ModeFrq[iMode] = valfrq;
+}
+
 void CMeshSolver::Initialize_ModeSuperposition(unsigned short valNmode){
   
   nMode=valNmode;
@@ -1565,9 +1569,11 @@ void CMeshSolver::Initialize_ModeSuperposition(unsigned short valNmode){
   /*--- initialize mode displacement pointer ---*/
   ModeDisp = new su2double[nMode];
   ModalForce = new su2double[nMode];
+  ModeFrq = new su2double[nMode];
   for (auto iMode=0; iMode < nMode; iMode++){
     ModeDisp[iMode] = 0;
     ModalForce[iMode] = 0;
+    ModeFrq[iMode] = 0;
   }
 
   GetNodes()->Initialize_ModeshapeMatrix(nMode);
