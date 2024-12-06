@@ -2098,6 +2098,14 @@ public:
   inline virtual void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, const su2double val_BoundModeShape) { }
 
   /*!
+   * \brief A virtual member. Set the travelling wave mode shape.
+   * \param[in] iMode - Index of the vibration mode.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundModeShape_TWM - Pointer to the boundary mode shape.
+   */
+  inline virtual void SetBound_ModeShape_TWM(unsigned long iPoint, unsigned long iMode, unsigned long iDim, const su2double val_BoundModeShape_TWM) { }
+
+  /*!
    * \brief A virtual member. Set the blade index for flutter analysis.
    * \param[in] val_BladeID - Value of the blade index.
    */
@@ -2105,11 +2113,28 @@ public:
 
   /*!
    * \brief A virtual member. Get the value of the mode shape at the boundary.
+   * \param[in] iPoint - Index of the point.
    * \param[in] iMode - Index of the vibration mode.
    * \param[in] iDim - Index of the dimension of interest.
    * \return Value of the boundary mode shape.
    */
   inline virtual su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member. Get the value of the travelling wave mode shape.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] iMode - Index of the vibration mode.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \return Value of the boundary mode shape.
+   */
+  inline virtual su2double GetBound_ModeShape_TWM(unsigned long iPoint, unsigned long iMode, unsigned long iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member. Get the index of blade, where a vertex locates.
+   * \param[in] iPoint - Index of the point.
+   * \return Value of the blade index.
+   */
+  inline virtual su2double GetBound_BladeID(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the boundary velocity.

@@ -179,10 +179,17 @@ public:
   /*!
    * \brief Compute the blade displacement with mode superposition method.
    * \param[in] geometry - Geometrical definition.
-   * \param[in] solver - the mesh solver. 
    * \param[in] config - Definition of the particular problem.   
    */
   void ComputeNode_Disp(CGeometry *geometry, CConfig* config) override;
+
+  /*!
+   * \brief Compute the travelling wave mode shape.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.  
+   * \param[in] iter - Current time iteration number. 
+   */
+  void ComputeModeShape_TWM(CGeometry *geometry, CConfig* config, unsigned long iter) override;
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.

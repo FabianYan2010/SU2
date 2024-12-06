@@ -4167,10 +4167,18 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
-   * \param[in] solver - the mesh solver. 
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ComputeNode_Disp(CGeometry *geometry, CConfig* config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number. 
+   */
+  inline virtual void ComputeModeShape_TWM(CGeometry *geometry, CConfig* config, unsigned long iter) { }
+
 
   /*!
    * \brief A virtual member.

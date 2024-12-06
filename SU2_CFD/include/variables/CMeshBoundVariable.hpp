@@ -37,6 +37,7 @@ private:
   MatrixType Boundary_Displacement;     /*!< \brief Store the reference coordinates of the mesh. */
   MatrixType Boundary_Velocity;         /*!< \brief Store the boundary velocities of the mesh. */
   C3DDoubleMatrix Boundary_ModeShape;   /*!< \brief Store the mode shape of the blade mesh. */
+  C3DDoubleMatrix Boundary_ModeShape_TWM;   /*!< \brief Store the mode shape of the blade mesh. */
   CVertexMap<unsigned> VertexMap;       /*!< \brief Object that controls accesses to the variables of this class. */
   su2vector<unsigned short> Boundary_BladeID;   /*!< \brief Store the blade index. */
 
@@ -109,6 +110,7 @@ public:
     //cout<<"Initialize_ModeshapeMatrix size "<<Boundary_ModeShape.size()<<" length "<<Boundary_ModeShape.length()
     //<<" rows "<<Boundary_ModeShape.rows()<<" cols "<<Boundary_ModeShape.cols()<<endl;
     Boundary_ModeShape.resize(nBoundPt,nMode,nDim,0.0);
+    Boundary_ModeShape_TWM.resize(nBoundPt,nMode,nDim,0.0);
   }
 
   /*!
@@ -118,6 +120,15 @@ public:
   inline void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, su2double val_BoundModeShape) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     Boundary_ModeShape(iPoint,iMode,iDim) = val_BoundModeShape;
+  }
+
+  /*!
+   * \brief Set the boundary mode shape.
+   * \param[in] val_BoundModeShape_TWM - value of the travelling wave mode shape.
+   */
+  inline void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, su2double val_BoundModeShape_TWM) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    Boundary_ModeShape_TWM(iPoint,iMode,iDim) = val_BoundModeShape_TWM;
   }
 
   /*!
@@ -136,6 +147,20 @@ public:
   inline su2double GetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return Boundary_ModeShape(iPoint,iMode,iDim);
+  }
+
+  inline su2double GetBound_ModeShape_TWM(unsigned long iPoint, unsigned long iMode, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Boundary_ModeShape_TWM(iPoint,iMode,iDim);
+  }
+
+  /*!
+   * \brief Get the value of the mode shape at the boundary.
+   * \return Value of the boundary mode shape.
+   */
+  inline su2double GetBound_BladeID(unsigned long iPoint) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Boundary_BladeID(iPoint);
   }
 
   /*!
