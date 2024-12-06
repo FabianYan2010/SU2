@@ -1562,9 +1562,11 @@ void CMeshSolver::SetMode_Frq(unsigned short iMode, const su2double valfrq){
     ModeFrq[iMode] = valfrq;
 }
 
-void CMeshSolver::Initialize_ModeSuperposition(unsigned short valNmode){
+void CMeshSolver::Initialize_ModeSuperposition(unsigned short valNmode, unsigned short valNblade, unsigned short valND){
   
   nMode=valNmode;
+  nBlade=valNblade;
+  TWM_ND=valND;
   cout<<" rank "<<rank<<" Initialize_ModeSuperposition, nMode "<<nMode<<endl;
   /*--- initialize mode displacement pointer ---*/
   ModeDisp = new su2double[nMode];
@@ -1628,7 +1630,6 @@ void CMeshSolver::ComputeModeShape_TWM(CGeometry *geometry, CConfig* config, uns
     EigenFrq[iMode] = GetMode_Frq(iMode);
   su2double theta, deltaT, time, omega;
   unsigned short Blade_index = 0;
-  unsigned short nBlade = 16;
   /*--- Compute delta time based on physical time step ---*/
   deltaT = config->GetDelta_UnstTimeND();
   time = iter*deltaT;
@@ -1650,7 +1651,7 @@ void CMeshSolver::ComputeModeShape_TWM(CGeometry *geometry, CConfig* config, uns
             for (auto iMode = 0; iMode < nMode; iMode++) {
               modeshape = GetNodes()->GetBound_ModeShape(iPoint,iMode,iDim);
               omega = 2*PI_NUMBER*EigenFrq[iMode];
-              modeshape_TWM = modeshape * sin(2*theta-omega*time);
+              modeshape_TWM = modeshape * sin(TWM_ND*theta-omega*time);
               GetNodes()->SetBound_ModeShape_TWM(iPoint, iMode, iDim, modeshape_TWM);
             }
           }

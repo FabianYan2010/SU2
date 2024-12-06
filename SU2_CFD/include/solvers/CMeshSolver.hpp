@@ -173,8 +173,10 @@ public:
   /*!
    * \brief Initialize the mode superposition method.
    * \param[in] valNmode - Number of mode.
+   * \param[in] valNblade - Number of blade.
+   * \param[in] valND - Nodal diameter.
    */
-  void Initialize_ModeSuperposition(unsigned short valNmode) override;
+  void Initialize_ModeSuperposition(unsigned short valNmode, unsigned short valNblade, unsigned short valND) override;
 
   /*!
    * \brief Compute the blade displacement with mode superposition method.

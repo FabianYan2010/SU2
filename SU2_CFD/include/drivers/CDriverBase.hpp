@@ -436,10 +436,12 @@ class CDriverBase {
   /*!
    * \brief Initialize the mode superposition method.
    * \param[in] valNmode - Number of mode.
+   * \param[in] valNblade - Number of blade.
+   * \param[in] valND - Nodal diameter.
    */
-  inline void Initialize_ModeSuperposition(unsigned short valNmode) {
+  inline void Initialize_ModeSuperposition(unsigned short valNmode, unsigned short valNblade, unsigned short valND) {
 
-    GetSolverAndCheckMarker(MESH_SOL)->Initialize_ModeSuperposition(valNmode);
+    GetSolverAndCheckMarker(MESH_SOL)->Initialize_ModeSuperposition(valNmode, valNblade,valND);
     
   }
 

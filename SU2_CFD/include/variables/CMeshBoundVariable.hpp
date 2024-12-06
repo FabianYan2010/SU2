@@ -42,8 +42,7 @@ private:
   su2vector<unsigned short> Boundary_BladeID;   /*!< \brief Store the blade index. */
 
 
-  unsigned long nMode = 0;      /*!< \brief Number of dimension of the problem. */
-  unsigned long nBlade = 0;      /*!< \brief Number of blades taken into consideration. */
+  unsigned short nMode = 0;      /*!< \brief Number of dimension of the problem. */
 
 public:
 

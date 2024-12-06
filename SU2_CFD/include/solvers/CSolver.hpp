@@ -103,11 +103,14 @@ protected:
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
 
+  /*--- Variables for flutter analysis. ---*/
   su2double *ModalForce;                /*!< \brief Vector to store the mode shape */
   su2double *ModeFrq;                   /*!< \brief Vector to store the mode frequency */
   su2double ModalForce_Initial[16]={0.0};
   su2double *ModeDisp;                   /*!< \brief Vector to store the mode displacement */
-  unsigned short nMode = 0;               /*!< \brief the number of modes for mode-superposition method */
+  unsigned short nMode = 0;              /*!< \brief the number of modes for mode-superposition method */
+  unsigned short nBlade = 0;             /*!< \brief the number of blades for mode-superposition method */
+  unsigned short TWM_ND = 0;             /*!< \brief the nodal diameter parameter of travelling wave */
 
   /*--- Variables that need to go. ---*/
 
@@ -4161,8 +4164,10 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] valNmode - the mode displacement.
+   * \param[in] valNblade - Number of blade.
+   * \param[in] valND - Nodal diameter.
    */
-  inline virtual void Initialize_ModeSuperposition(unsigned short valNmode) { }
+  inline virtual void Initialize_ModeSuperposition(unsigned short valNmode, unsigned short valNblade, unsigned short valND) { }
 
   /*!
    * \brief A virtual member.
