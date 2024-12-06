@@ -235,7 +235,7 @@ void CIteration::ComputeModalForce(CGeometry** geometry, CSolver*** solver, CCon
             Pressure = solver[MESH_0][FLOW_SOL]->GetNodes()->GetPressure(iPoint);
             Normal = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNormal();
             for (auto iDim = 0; iDim < nDim; iDim++) {
-              ModeShape[iDim] = solver[MESH_0][MESH_SOL]->GetNodes()->GetBound_ModeShape(iPoint,iMode,iDim);
+              ModeShape[iDim] = solver[MESH_0][MESH_SOL]->GetNodes()->GetBound_ModeShape_TWM(iPoint,iMode,iDim);
               //Disp[iDim] = solver[MESH_0][MESH_SOL]->LinSysSol(iPoint, iDim);
               NormalModeShape += ModeShape[iDim]*Normal[iDim];
             }

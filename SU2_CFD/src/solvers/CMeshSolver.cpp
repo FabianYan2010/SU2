@@ -1603,7 +1603,7 @@ void CMeshSolver::ComputeNode_Disp(CGeometry *geometry, CConfig* config){
             
             for (auto iMode = 0; iMode < nMode; iMode++) {
               mode_disp=GetMode_Disp(iMode);
-              ModeShape[iDim] = GetNodes()->GetBound_ModeShape(iPoint,iMode,iDim);
+              ModeShape[iDim] = GetNodes()->GetBound_ModeShape_TWM(iPoint,iMode,iDim);
               disp+=ModeShape[iDim]*mode_disp;
             }
 
@@ -1623,13 +1623,14 @@ void CMeshSolver::ComputeNode_Disp(CGeometry *geometry, CConfig* config){
 void CMeshSolver::ComputeModeShape_TWM(CGeometry *geometry, CConfig* config, unsigned long iter){
   
   su2double modeshape, modeshape_TWM;
+  su2double theta, deltaT, time, omega;
+  unsigned short Blade_index = 0;
 
   //store first the eigenfrequencies locally.
   su2double EigenFrq[nMode] = {0.0};
   for (auto iMode = 0; iMode < nMode; iMode++)
     EigenFrq[iMode] = GetMode_Frq(iMode);
-  su2double theta, deltaT, time, omega;
-  unsigned short Blade_index = 0;
+  
   /*--- Compute delta time based on physical time step ---*/
   deltaT = config->GetDelta_UnstTimeND();
   time = iter*deltaT;
@@ -1649,9 +1650,15 @@ void CMeshSolver::ComputeModeShape_TWM(CGeometry *geometry, CConfig* config, uns
             Blade_index = GetNodes()->GetBound_BladeID(iPoint);
             theta = 2*PI_NUMBER*Blade_index/nBlade;
             for (auto iMode = 0; iMode < nMode; iMode++) {
+              //retrieve the modeshape for single blade
               modeshape = GetNodes()->GetBound_ModeShape(iPoint,iMode,iDim);
+              //compute the angular frequency of the mode shape
               omega = 2*PI_NUMBER*EigenFrq[iMode];
-              modeshape_TWM = modeshape * sin(TWM_ND*theta-omega*time);
+              //compute the modeshape for the whole blade row in travelling wave mode
+              if (TWM_ND == 0)
+                modeshape_TWM = modeshape;
+              else
+                modeshape_TWM = modeshape * sin(TWM_ND*theta-omega*time);
               GetNodes()->SetBound_ModeShape_TWM(iPoint, iMode, iDim, modeshape_TWM);
             }
           }
