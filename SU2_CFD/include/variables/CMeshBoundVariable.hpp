@@ -125,7 +125,7 @@ public:
    * \brief Set the boundary mode shape.
    * \param[in] val_BoundModeShape_TWM - value of the travelling wave mode shape.
    */
-  inline void SetBound_ModeShape(unsigned long iPoint, unsigned long iMode, unsigned long iDim, su2double val_BoundModeShape_TWM) override {
+  inline void SetBound_ModeShape_TWM(unsigned long iPoint, unsigned long iMode, unsigned long iDim, su2double val_BoundModeShape_TWM) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     Boundary_ModeShape_TWM(iPoint,iMode,iDim) = val_BoundModeShape_TWM;
   }
