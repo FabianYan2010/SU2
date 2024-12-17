@@ -423,12 +423,11 @@ class CDriverBase {
 
   /*!
    * \brief Compute the node displacements of a blade.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Node displacements (nDim).
+   * \param[in] time_iter - Current time iteration.
    */
-  inline void ComputeNode_Disp(void) {
+  inline void ComputeNode_Disp(unsigned long time_iter) {
 
+    GetSolverAndCheckMarker(MESH_SOL)->ComputeModeShape_TWM(main_geometry, main_config, time_iter);
     GetSolverAndCheckMarker(MESH_SOL)->ComputeNode_Disp(main_geometry, main_config);
 
   }
