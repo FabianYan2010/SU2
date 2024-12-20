@@ -1054,6 +1054,7 @@ private:
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the Rotating Frame values */
   bool RampOutletPressure;          /*!< \brief option for ramping up or down the outlet pressure */
+  bool Method_1D3D;                 /*!< \brief option to use 1D3D Method */
   su2double AverageMachLimit;           /*!< \brief option for turbulent mixingplane */
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
@@ -1104,6 +1105,9 @@ private:
   eng_cyl[7],            /*!< \brief engine box array for the COption class. */
   eng_val[5],            /*!< \brief engine box array values for the COption class. */
   jst_coeff[2],          /*!< \brief artificial dissipation (flow) array for the COption class. */
+  pipe_disc_1D3D[2],     /*!< \brief pipe discritization in space and time domain. */
+  pipe_geo_1D3D[2],      /*!< \brief pipe geometry dimension array for the 1D3D method. */
+  valve_coeff_0D[2],     /*!< \brief valve characteristics array for the 1D3D method. */
   ffd_coeff[3],          /*!< \brief artificial dissipation (flow) array for the COption class. */
   mixedout_coeff[3],     /*!< \brief default mixedout algorithm coefficients for the COption class. */
   rampRotFrame_coeff[3], /*!< \brief ramp rotating frame coefficients for the COption class. */
@@ -5056,6 +5060,24 @@ public:
   void SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess) { Kind_PerformanceAverageProcess = new_AverageProcess; }
 
   /*!
+   * \brief Get pipe discritization for 1D3D method.
+   * \return number of nodes and time steps.
+   */
+  su2double Get1D3D_Pipe_Disc(unsigned short iCoeff) const { return pipe_disc_1D3D[iCoeff];}
+
+  /*!
+   * \brief Get pipe geometry for 1D3D method.
+   * \return length and diameter of the pipe.
+   */
+  su2double Get1D3D_Pipe_Geo(unsigned short iCoeff) const { return pipe_geo_1D3D[iCoeff];}
+
+    /*!
+   * \brief Get 0D valve characteristics for 1D3D method.
+   * \return Darcy coeff and plenum volume.
+   */
+  su2double GetValve_Coeff(unsigned short iCoeff) const { return valve_coeff_0D[iCoeff];}
+
+  /*!
    * \brief Get coeff for Rotating Frame Ramp.
    * \return coeff Ramp Rotating Frame.
    */
@@ -5089,6 +5111,12 @@ public:
    * \brief Set Monitor Outlet Pressure value for the ramp.
    */
   void SetMonitotOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
+
+  /*!
+   * \brief Get 1D3D Method option.
+   * \return Ramp Outlet pressure option.
+   */
+  bool GetMethod_1D3D(void) const { return Method_1D3D;}
 
   /*!
    * \brief Get Outlet Pressure Ramp option.

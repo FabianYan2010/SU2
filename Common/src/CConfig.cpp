@@ -1613,6 +1613,19 @@ void CConfig::SetConfig_Options() {
   /*!\brief RAMP_OUTLET_PRESSURE_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet pressure,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
   addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, rampOutPres_coeff);
+
+  /*!\brief 1D3D Method\n DESCRIPTION: option to use 1D3D Method*/
+  addBoolOption("METHOD_1D3D", Method_1D3D, false);
+  pipe_disc_1D3D[0]=1001; pipe_disc_1D3D[1]=51;
+  /*!\brief PIPE_DISC_1D3D \n DESCRIPTION: the discritization in space and time domain. \ingroup Config*/
+  addDoubleArrayOption("PIPE_DISC_1D3D",2, pipe_disc_1D3D);
+  pipe_geo_1D3D[0] = 1.0; pipe_geo_1D3D[1] = 0.1;
+  /*!\brief PIPE_GEO_1D3D \n DESCRIPTION: the pipe length(1st value) and diameter(2nd value) for one dimensinal pipe. \ingroup Config*/
+  addDoubleArrayOption("PIPE_GEO_1D3D", 2, pipe_geo_1D3D);
+  valve_coeff_0D[0] = 3000.0; valve_coeff_0D[1] = 1.0;
+  /*!\brief VALVE_COEFF_0D \n DESCRIPTION: 0D valve characteristics. 1st value is Darcy coeff, 2nd is plenum volume. \ingroup Config*/
+  addDoubleArrayOption("VALVE_COEFF_0D", 2, valve_coeff_0D);
+
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
