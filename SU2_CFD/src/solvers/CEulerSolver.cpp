@@ -174,6 +174,24 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   AllocVectorOfMatrices(nVertex, (rans? nPrimVar+2 : nPrimVar), DonorPrimVar);
 
+  /*--- 1D Solver Variables ---*/
+  // temporarily stored here, to be changed in the future
+  // the 1D method works only on the master node 
+  u_1D.resize(XNODES);          /*!< \brief velocity */
+  a_1D.resize(XNODES);          /*!< \brief sound speed */
+  beta_1D.resize(XNODES);       /*!< \brief characteristics */
+  lamda_1D.resize(XNODES);      /*!< \brief characteristics */
+  aA_1D.resize(XNODES);         /*!< \brief entropy */
+
+  for (unsigned long iXnode = 0; iXnode < XNODES; iXnode++) {
+    u_1D[iXnode]        = 0.0;
+    a_1D[iXnode]        = 0.0;
+    beta_1D[iXnode]     = 0.0;
+    lamda_1D[iXnode]    = 0.0;
+    aA_1D[iXnode]       = 0.0;
+  }
+  /*--- End of 1D Solver Variables ---*/
+
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
   DonorGlobalIndex.resize(nMarker);
@@ -5018,6 +5036,303 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   delete [] Normal;
 
 }
+
+
+void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_container,
+                              CNumerics *conv_numerics, CNumerics *visc_numerics,
+                              CConfig *config, unsigned short val_marker) {
+
+    // define some useful constants
+    const su2double Gas_Constant      = config->GetGas_ConstantND();
+    const su2double Cp = Gas_Constant*Gamma/(Gamma - 1);
+    const su2double PI = 3.1415926535898;
+    const su2double f = 0.02;   //Darcy coefficient, used for friction calculation
+
+    /*--- At first, compute the average values from 3D boundary ---*/
+    
+    // define the variables to store average value
+    su2double Surface_Temperature_Avg         = 0.0;
+    su2double Surface_Pressure_Avg            = 0.0;
+
+    // define the local and global variables to store values of each core
+    su2double Surface_Area_Local              = 0.0;
+    su2double Surface_MassFlow_Local          = 0.0;
+    su2double Surface_Temperature_Local       = 0.0;
+    su2double Surface_Pressure_Local          = 0.0;
+    su2double Surface_Area_Total              = 0.0;
+    su2double Surface_MassFlow_Total          = 0.0;
+    su2double Surface_Temperature_Total       = 0.0;
+    su2double Surface_Pressure_Total          = 0.0;
+
+    su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
+    Enthalpy, Velocity[3] = {0.0}, TangVel[3], Vector[3], Velocity2, MassFlow, Density, Area,
+    SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
+
+    auto flow_nodes = solver_container[FLOW_SOL]->GetNodes();
+
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      
+      auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+      if (geometry->nodes->GetDomain(iPoint)) {
+
+        geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
+
+        const auto Density = flow_nodes->GetDensity(iPoint);
+        Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0; Vtang2 = 0.0;
+
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          Area += Vector[iDim] * Vector[iDim];
+          Velocity[iDim] = flow_nodes->GetVelocity(iPoint,iDim);
+          Velocity2 += Velocity[iDim] * Velocity[iDim];
+          MassFlow += Vector[iDim] * Density * Velocity[iDim];
+        }
+
+        Area       = sqrt (Area);
+        Pressure   = flow_nodes->GetPressure(iPoint);
+        SoundSpeed = flow_nodes->GetSoundSpeed(iPoint);
+
+        Mach              = sqrt(Velocity2)/SoundSpeed;
+        Temperature       = Pressure / (Gas_Constant * Density);
+        TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+        TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+
+        /*--- Compute the local sum of required variables ---*/
+
+        Surface_Area_Local             += Area;
+        Surface_MassFlow_Local         += MassFlow;
+        
+        Weight = abs(Area);
+
+        Surface_Temperature_Local      += Temperature*Weight;
+        Surface_Pressure_Local         += Pressure*Weight;
+
+        /*--- compute the global sum ---*/
+
+        auto Allreduce = [](const su2double src, su2double dst) {
+          SU2_MPI::Allreduce(&src, &dst, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        };
+
+        Allreduce(Surface_Area_Local, Surface_Area_Total);
+        Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total);
+        Allreduce(Surface_Temperature_Local, Surface_Temperature_Total);
+        Allreduce(Surface_Pressure_Local, Surface_Pressure_Total);
+
+        /*--- the area-average method is used ---*/
+        Weight = abs(Surface_Area_Total);
+
+        Surface_Temperature_Avg = Surface_Temperature_Total/Weight;
+        Surface_Pressure_Avg = Surface_Pressure_Total/Weight;
+
+      }
+    }
+    END_SU2_OMP_FOR
+
+    /*--- After the 3D boundary average, start computing the 1D zone ---*/
+    // Get the unsteady time infos
+    const unsigned long TimeIter   = config->GetTimeIter();
+    const su2double deltaT = config->GetDelta_UnstTimeND();
+    
+
+    //pipe dimensions
+    su2double pipeLength = 1;
+    su2double pipeDiameter = 0.01;
+    //valve characteristics
+    su2double plenumVolume = 1;
+    su2double Kt = 3000;
+
+    // initialize system variables
+    unsigned long xnodes = XNODES;
+    unsigned long tnodes = 51;
+
+    // coefficients
+    su2double a_co = (3-Gamma)/(2*Gamma-2);
+    su2double b_co = (Gamma+1)/(2*Gamma-2);
+
+    //reference pressure
+    su2double P_total_ref_1D = 101325;                          //reference total pressure
+    su2double T_total_ref_1D = 288.15;                          //reference total temperature
+    su2double a_ref_1D = sqrt(Gamma * Gas_Constant * T_total_ref_1D); //reference sound speed
+    su2double A = abs(Surface_Area_Total);
+    su2double Area = PI * 0.25 * (pipeDiameter)*(pipeDiameter);
+    su2double dx = pipeLength / (xnodes - 1.0);
+    su2double dt = deltaT / (tnodes - 1.0);
+
+    // arrays for computing flow in the pipe
+    vector<su2double> P(xnodes,0.0);
+    vector<su2double> T(xnodes,0.0);
+    vector<su2double> nextbeta(xnodes,0.0);
+    vector<su2double> nextlamda(xnodes,0.0);
+    vector<su2double> nextaA(xnodes,0.0);
+
+    // intermediate variables
+    su2double px_dx, qx_dx, tx_dx;
+    su2double p_u, p_a, p_G, p_lamda, p_aA;
+    su2double q_u, q_a, q_G, q_beta, q_aA;
+    su2double t_u, t_a, t_G, t_aA;
+    su2double tcurrent, tnext, t0current, pcurrent, pnext, p0next, p0current, mcurrent; // NOTE
+
+    su2double Tin = Surface_Temperature_Avg;
+    su2double Pin = Surface_Pressure_Avg;
+    su2double Uin = Surface_MassFlow_Total/(Pin/Tin/Gas_Constant)/abs(Surface_Area_Total);
+    
+    su2double ain = sqrt(Gamma*Gas_Constant*Tin);
+    su2double aAin = a_ref_1D*exp((Cp*log(Tin/T_total_ref_1D) - Gas_Constant*log(Pin/P_total_ref_1D)) / (2*Cp));
+    su2double T0in = Tin + 0.5*Uin*Uin/Cp;
+    su2double P0in = Pin*pow((Tin/T0in),(Gamma/(1-Gamma)));
+
+
+    /*--- we do the 1D computation on master node ---*/
+    if (rank == MASTER_NODE){
+
+      // initialize pipe and plenum condition at THE FIRST timestep
+      if (TimeIter == 0)
+      {
+        // pipe initialization using compressor outlet condition
+        for (unsigned long ixnode = 0; ixnode < xnodes; ixnode++){
+          u_1D[ixnode] = Uin;
+          a_1D[ixnode] = ain;
+          aA_1D[ixnode] = aAin;
+          lamda_1D[ixnode] = ain + 0.5*(Gamma-1)*Uin;
+          beta_1D[ixnode] = ain - 0.5*(Gamma-1)*Uin;
+        }
+      }
+
+      // update first node condition using compressor outlet condition
+      u_1D[0] = Uin;
+      a_1D[0] = ain;
+      aA_1D[0] = aAin;
+      lamda_1D[0] = ain + 0.5*(Gamma-1)*Uin;
+      beta_1D[0] = ain - 0.5*(Gamma-1)*Uin;
+
+      for (unsigned long i = 0; i < tnodes; i++)
+      {
+        //Info << "Entropy wave" << endl;
+        for (unsigned long i4 = 1; i4 < (xnodes-1); i4++){
+            tx_dx = (beta_1D[i4]-lamda_1D[i4]) / (-(Gamma-1)*dx/dt + lamda_1D[i4-1] - lamda_1D[i4] + beta_1D[i4] - beta_1D[i4-1]);
+            t_u = u_1D[i4-1] * tx_dx + (1 - tx_dx)*u_1D[i4];
+            if (t_u >= 0)
+            {
+                t_aA = aA_1D[i4] + tx_dx * (aA_1D[i4-1] - aA_1D[i4]);
+                t_a = a_1D[i4] + tx_dx * (a_1D[i4-1] - a_1D[i4]);
+            }
+            else
+            {
+                tx_dx = (beta_1D[i4]-lamda_1D[i4]) / ((Gamma-1)*dx/dt + lamda_1D[i4+1] - lamda_1D[i4] + beta_1D[i4] - beta_1D[i4+1]);
+                t_u = u_1D[i4+1] * tx_dx + (1 - tx_dx)*u_1D[i4];
+                t_aA = aA_1D[i4] + tx_dx * (aA_1D[i4+1] - aA_1D[i4]);
+                t_a = a_1D[i4] + tx_dx * (a_1D[i4+1] - a_1D[i4]);
+            }
+            t_G = f * t_u * abs(t_u) / (2 * pipeDiameter);
+            nextaA[i4] = t_aA + t_aA * (Gamma-1) * dt * (t_u*t_G) / (2*t_a*t_a);
+        }
+
+        //Info << "left Riemann wave" << endl;
+        for (unsigned long i2 = 1; i2 < (xnodes-1); i2++){
+            px_dx = (b_co*lamda_1D[i2] - a_co*beta_1D[i2]) / (dx/dt - b_co*(lamda_1D[i2-1]-lamda_1D[i2]) + a_co*(beta_1D[i2-1] - beta_1D[i2]));
+            p_u = u_1D[i2] + (u_1D[i2-1] - u_1D[i2]) * px_dx;
+            p_a = a_1D[i2] + (a_1D[i2-1] - a_1D[i2]) * px_dx;
+            if ((p_u + p_a) >= 0)
+            {
+                p_lamda = lamda_1D[i2] + (lamda_1D[i2-1] - lamda_1D[i2]) * px_dx;
+                p_aA = aA_1D[i2] + (aA_1D[i2-1] - aA_1D[i2]) * px_dx;
+            }
+            else
+            {
+                px_dx = (b_co*lamda_1D[i2] - a_co*beta_1D[i2]) / (-dx/dt - b_co*(lamda_1D[i2+1]-lamda_1D[i2]) + a_co*(beta_1D[i2+1] - beta_1D[i2]));
+                p_u = u_1D[i2] + (u_1D[i2+1] - u_1D[i2]) * px_dx;
+                p_a = a_1D[i2] + (a_1D[i2+1] - a_1D[i2]) * px_dx;
+                p_lamda = lamda_1D[i2] + (lamda_1D[i2+1] - lamda_1D[i2]) * px_dx;
+                p_aA = aA_1D[i2] + (aA_1D[i2+1] - aA_1D[i2]) * px_dx;
+            }
+            p_G = f * p_u * abs(p_u) / (2 * pipeDiameter);
+            nextlamda[i2] = p_lamda + p_a * (nextaA[i2] - p_aA)/p_aA - 0.5*(Gamma-1)*(1 - (Gamma-1)*p_u/p_a)*p_G*dt;
+        }
+
+        //Info << "right Riemann wave" << endl;
+        for (unsigned long i3 = 1; i3 < (xnodes-1); i3++){
+            qx_dx = (b_co*beta_1D[i3] - a_co*lamda_1D[i3]) / (dx/dt - b_co*(beta_1D[i3+1]-beta_1D[i3]) + a_co*(lamda_1D[i3+1] - lamda_1D[i3]));
+            q_u = u_1D[i3] + (u_1D[i3+1] - u_1D[i3]) * qx_dx;
+            q_a = a_1D[i3] + (a_1D[i3+1] - a_1D[i3]) * qx_dx;
+            if ((q_u - q_a) <= 0)
+            {
+                q_beta = beta_1D[i3] + (beta_1D[i3+1] - beta_1D[i3]) * qx_dx;
+                q_aA = aA_1D[i3] + (aA_1D[i3+1] - aA_1D[i3]) * qx_dx;
+            }
+            else
+            {
+                qx_dx = (b_co*beta_1D[i3] - a_co*lamda_1D[i3]) / (-dx/dt - b_co*(beta_1D[i3-1]-beta_1D[i3]) + a_co*(lamda_1D[i3-1] - lamda_1D[i3]));
+                q_u = u_1D[i3] + (u_1D[i3-1] - u_1D[i3]) * qx_dx;
+                q_a = a_1D[i3] + (a_1D[i3-1] - a_1D[i3]) * qx_dx;
+                q_beta = beta_1D[i3] + (beta_1D[i3-1] - beta_1D[i3]) * qx_dx;
+                q_aA = aA_1D[i3] + (aA_1D[i3-1] - aA_1D[i3]) * qx_dx;
+            }
+            q_G = f * q_u * abs(q_u) / (2 * pipeDiameter);
+            nextbeta[i3] = q_beta + q_a * (nextaA[i3] - q_aA)/q_aA + 0.5*(Gamma-1)*(1 + (Gamma-1)*q_u/q_a)*q_G*dt;
+        }
+
+        //Info << "boundary" << endl;
+        // outlet boundary condition
+        tx_dx = (beta_1D[xnodes-1] - lamda_1D[xnodes-1])/(-(Gamma-1)*dx/dt+lamda_1D[xnodes-2]-lamda_1D[xnodes-1]+beta_1D[xnodes-1]-beta_1D[xnodes-2]);
+        t_u = u_1D[xnodes-2]*tx_dx + (1-tx_dx)*u_1D[xnodes-1];
+        px_dx = (b_co*lamda_1D[xnodes-1] - a_co*beta_1D[xnodes-1])/(dx/dt-b_co*(lamda_1D[xnodes-2]-lamda_1D[xnodes-1])+a_co*(beta_1D[xnodes-2]-beta_1D[xnodes-1]));
+        p_u = u_1D[xnodes-1] + (u_1D[xnodes-2]-u_1D[xnodes-1])*px_dx;
+        p_a = a_1D[xnodes-1] + (a_1D[xnodes-2]-a_1D[xnodes-1])*px_dx;
+        p_lamda = lamda_1D[xnodes-1] + (lamda_1D[xnodes-2]-lamda_1D[xnodes-1])*px_dx;
+        p_aA = aA_1D[xnodes-1] + (aA_1D[xnodes-2]-aA_1D[xnodes-1])*px_dx;
+        p_G = f * p_u * abs(p_u)/(2*pipeDiameter);
+        if (t_u >= 0){
+            t_aA = aA_1D[xnodes-1] + tx_dx * (aA_1D[xnodes-2] - aA_1D[xnodes-1]);
+            t_a = a_1D[xnodes-1] + tx_dx * (a_1D[xnodes-2] - a_1D[xnodes-1]);
+            t_G = f * t_u * abs(t_u)/(2*pipeDiameter);
+            nextaA[xnodes-1] = t_aA + t_aA*(Gamma-1)*dt*t_u*t_G/(2*t_a*t_a);
+            nextlamda[xnodes-1] = p_lamda + p_a*(nextaA[xnodes-1] - p_aA)/p_aA - 0.5*(Gamma-1)*(1-(Gamma-1)*p_u/p_a)*p_G*dt;
+
+            tcurrent = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
+            pcurrent = P_total_ref_1D*pow((a_1D[xnodes-1]/aA_1D[xnodes-1]),(2*Gamma/(Gamma-1)));
+            t0current = tcurrent + 0.5*(u_1D[xnodes-1])*(u_1D[xnodes-1])/Cp;
+            p0current = pcurrent*pow((1+0.5*(Gamma-1)*(u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1])),(Gamma/(Gamma-1)));
+            mcurrent = pcurrent/Gas_Constant/tcurrent*Area*u_1D[xnodes-1];
+            p0next = p0current + dt*Gamma*Gas_Constant*t0current*(mcurrent - sqrt((p0current-P_total_ref_1D)/Kt))/plenumVolume;
+            pnext = p0next/pow((1+0.5*(Gamma-1)*(u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1])),(Gamma/(Gamma-1)));
+            nextbeta[xnodes-1] = 2*nextaA[xnodes-1]*pow((pnext/P_total_ref_1D),((Gamma-1)/2/Gamma)) - nextlamda[xnodes-1];
+        }
+        else{
+            tcurrent = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
+            pcurrent = P_total_ref_1D*pow((a_1D[xnodes-1]/aA_1D[xnodes-1]),(2*Gamma/(Gamma-1)));
+            t0current = tcurrent + 0.5*u_1D[xnodes-1]*u_1D[xnodes-1]/Cp;
+            p0current = pcurrent*pow((1+0.5*(Gamma-1)*(u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1])),(Gamma/(Gamma-1)));
+            mcurrent = pcurrent/Gas_Constant/tcurrent*Area*u_1D[xnodes-1];
+            p0next = p0current + dt*Gamma*Gas_Constant*t0current*(mcurrent - sqrt((p0current-P_total_ref_1D)/Kt))/plenumVolume;
+            pnext = p0next/pow((1+0.5*(Gamma-1)*((u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1]))),(Gamma/(Gamma-1)));
+            tnext = tcurrent*pow((pcurrent/pnext),((1-Gamma)/Gamma));
+            nextaA[xnodes-1] = a_ref_1D*exp((Cp*log(tnext/T_total_ref_1D) - Gas_Constant*log(pnext/P_total_ref_1D))/2/Cp);
+            nextlamda[xnodes-1] = p_lamda + p_a*(nextaA[xnodes-1] - p_aA)/p_aA - 0.5*(Gamma-1)*(1-(Gamma-1)*p_u/p_a)*p_G*dt;
+            nextbeta[xnodes-1] = 2*nextaA[xnodes-1]*pow((pnext/P_total_ref_1D),((Gamma-1)/2/Gamma)) - nextlamda[xnodes-1];
+        }
+
+        for (unsigned long ixnode = 1; ixnode<xnodes; ixnode++){
+            lamda_1D[ixnode] = nextlamda[ixnode];
+            beta_1D[ixnode] = nextbeta[ixnode];
+            aA_1D[ixnode] = nextaA[ixnode];
+            u_1D[ixnode] = (lamda_1D[ixnode] - beta_1D[ixnode])/(Gamma-1);
+            a_1D[ixnode] = (lamda_1D[ixnode] + beta_1D[ixnode])/2.0;
+        }
+      }
+
+    }
+
+    // calculate next p & T
+    T[1] = a_1D[1]*a_1D[1]/Gamma/Gas_Constant;
+    P[1] = P_total_ref_1D*pow((T[1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[1]/a_ref_1D),(2*Gamma/(1-Gamma)));
+
+    T[xnodes-1] = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
+    P[xnodes-1] = P_total_ref_1D*pow((T[xnodes-1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[xnodes-1]/a_ref_1D),(2*Gamma/(1-Gamma)));
+
+
+}
+
 
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics,

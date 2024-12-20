@@ -116,6 +116,15 @@ protected:
   unsigned long BCThrust_Counter;
 
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
+ 
+  /*--- 1D Solver Variables ---*/
+  unsigned long XNODES = 1001;     /*!< \brief number of nodes */
+  vector<su2double> u_1D;          /*!< \brief velocity */
+  vector<su2double> a_1D;          /*!< \brief sound speed */
+  vector<su2double> beta_1D;       /*!< \brief characteristics */
+  vector<su2double> lamda_1D;      /*!< \brief characteristics */
+  vector<su2double> aA_1D;         /*!< \brief entropy */
+  /*--- End of 1D Solver Variables ---*/
 
   /*--- Turbomachinery Solver Variables ---*/
 
@@ -541,6 +550,27 @@ public:
                                CConfig *config,
                                unsigned short val_marker,
                                bool val_inlet_surface);
+
+  /*!
+   * \author: Chuanxiang Yan
+   *
+   * \brief Impose the 1D3D boundary condition. For theory detail, refer to
+   * \brief "A Novel One-Dimensional-Three-Dimensional Coupled Method to 
+   * \brief Predict Surge Boundary of Centrifugal Compressors"
+   * 
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_1D3D_Downstream(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
