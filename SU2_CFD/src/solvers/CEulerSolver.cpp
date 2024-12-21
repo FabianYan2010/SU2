@@ -5126,6 +5126,12 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
         Surface_Temperature_Avg = Surface_Temperature_Total/Weight;
         Surface_Pressure_Avg = Surface_Pressure_Total/Weight;
 
+
+        /*--- Dimensinal values ---*/
+        Surface_MassFlow_Total = Surface_MassFlow_Total * config->GetDensity_Ref() * config->GetVelocity_Ref();
+        Surface_Pressure_Avg = Surface_Pressure_Avg * config->GetPressure_Ref();
+        Surface_Temperature_Avg = Surface_Temperature_Avg * config->GetTemperature_Ref();
+
       }
     }
     END_SU2_OMP_FOR
