@@ -5040,7 +5040,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics,
-                              CConfig *config, unsigned short val_marker) {
+                              CConfig *config, unsigned short val_marker, 
+                              su2double & backpressure, su2double & backtemperature ) {
 
     // define some useful constants
     const su2double Gas_Constant      = config->GetGas_ConstantND();
@@ -5136,15 +5137,14 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
     
 
     //pipe dimensions
-    su2double pipeLength = 1;
-    su2double pipeDiameter = 0.01;
+    su2double pipeLength = config->Get1D3D_Pipe_Geo(0);
+    su2double pipeDiameter = config->Get1D3D_Pipe_Geo(1);
     //valve characteristics
-    su2double plenumVolume = 1;
-    su2double Kt = 3000;
-
-    // initialize system variables
-    unsigned long xnodes = XNODES;
-    unsigned long tnodes = 51;
+    su2double plenumVolume = config->GetValve_Coeff(0);
+    su2double Kt = config->GetValve_Coeff(1);
+    //discritization factors
+    unsigned long xnodes = config->Get1D3D_Pipe_Disc(0);
+    unsigned long tnodes = config->Get1D3D_Pipe_Disc(1);
 
     // coefficients
     su2double a_co = (3-Gamma)/(2*Gamma-2);
@@ -5329,7 +5329,9 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
 
     T[xnodes-1] = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
     P[xnodes-1] = P_total_ref_1D*pow((T[xnodes-1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[xnodes-1]/a_ref_1D),(2*Gamma/(1-Gamma)));
-
+    
+    backpressure = P[1];
+    backtemperature = T[1];
 
 }
 

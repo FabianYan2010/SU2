@@ -564,13 +564,17 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] backpressure - pressure to be assigned to 3D outlet.
+   * \param[in] backtemperature - temperature to be assigned to 3D outlet.
    */
   void BC_1D3D_Downstream(CGeometry *geometry,
                   CSolver **solver_container,
                   CNumerics *conv_numerics,
                   CNumerics *visc_numerics,
                   CConfig *config,
-                  unsigned short val_marker) final;
+                  unsigned short val_marker,
+                  su2double & backpressure,
+                  su2double & backtemperature) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
