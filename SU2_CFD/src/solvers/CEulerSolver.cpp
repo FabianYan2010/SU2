@@ -5977,6 +5977,18 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             Pressure_e /= config->GetPressure_Ref();
             Density_e = Density_i;
 
+            if (config->GetMethod_1D3D()){
+              su2double backpressure, backtemperature;
+
+              BC_1D3D_Downstream(geometry, solver_container,conv_numerics, visc_numerics,
+                                  config, val_marker, backpressure, backtemperature);
+              backpressure /= config->GetPressure_Ref();
+              backtemperature /= config->GetTemperature_Ref();
+              GetFluidModel()->SetTDState_PT(backpressure, backtemperature);
+              Density_e = GetFluidModel()->GetDensity();
+              Pressure_e = backpressure;                              
+            }
+
             /* --- Compute the boundary state u_e --- */
             GetFluidModel()->SetTDState_Prho(Pressure_e, Density_e);
             Velocity2_e = 0.0;
