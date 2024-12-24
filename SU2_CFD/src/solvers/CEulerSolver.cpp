@@ -5138,63 +5138,62 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
 
     /*--- After the 3D boundary average, start computing the 1D zone ---*/
     // Get the unsteady time infos
-    const unsigned long TimeIter   = config->GetTimeIter();
-    const su2double deltaT = config->GetDelta_UnstTimeND();
-    
-
-    //pipe dimensions
-    su2double pipeLength = config->Get1D3D_Pipe_Geo(0);
-    su2double pipeDiameter = config->Get1D3D_Pipe_Geo(1);
-    //valve characteristics
-    su2double plenumVolume = config->GetValve_Coeff(0);
-    su2double Kt = config->GetValve_Coeff(1);
-    //discritization factors
-    unsigned long xnodes = config->Get1D3D_Pipe_Disc(0);
-    unsigned long tnodes = config->Get1D3D_Pipe_Disc(1);
-
-    // coefficients
-    su2double a_co = (3-Gamma)/(2*Gamma-2);
-    su2double b_co = (Gamma+1)/(2*Gamma-2);
-
-    //reference pressure
-    su2double P_total_ref_1D = 101325;                          //reference total pressure
-    su2double T_total_ref_1D = 288.15;                          //reference total temperature
-    su2double a_ref_1D = sqrt(Gamma * Gas_Constant * T_total_ref_1D); //reference sound speed
-    su2double A = abs(Surface_Area_Total);
-    su2double Area = PI * 0.25 * (pipeDiameter)*(pipeDiameter);
-    su2double dx = pipeLength / (xnodes - 1.0);
-    su2double dt = deltaT / (tnodes - 1.0);
-
-    // arrays for computing flow in the pipe
-    vector<su2double> P(xnodes,0.0);
-    vector<su2double> T(xnodes,0.0);
-    vector<su2double> nextbeta(xnodes,0.0);
-    vector<su2double> nextlamda(xnodes,0.0);
-    vector<su2double> nextaA(xnodes,0.0);
-
-    // intermediate variables
-    su2double px_dx, qx_dx, tx_dx;
-    su2double p_u, p_a, p_G, p_lamda, p_aA;
-    su2double q_u, q_a, q_G, q_beta, q_aA;
-    su2double t_u, t_a, t_G, t_aA;
-    su2double tcurrent, tnext, t0current, pcurrent, pnext, p0next, p0current, mcurrent; // NOTE
-
-    su2double Tin = Surface_Temperature_Avg;
-    su2double Pin = Surface_Pressure_Avg;
-    su2double Uin = Surface_MassFlow_Total/(Pin/Tin/Gas_Constant)/abs(Surface_Area_Total);
-    
-    su2double ain = sqrt(Gamma*Gas_Constant*Tin);
-    su2double aAin = a_ref_1D*exp((Cp*log(Tin/T_total_ref_1D) - Gas_Constant*log(Pin/P_total_ref_1D)) / (2*Cp));
-    su2double T0in = Tin + 0.5*Uin*Uin/Cp;
-    su2double P0in = Pin*pow((Tin/T0in),(Gamma/(1-Gamma)));
-
 
     /*--- we do the 1D computation on master node ---*/
     if (rank == MASTER_NODE){
+      
+      const unsigned long TimeIter   = config->GetTimeIter();
+      const su2double deltaT = config->GetDelta_UnstTimeND();
+
+      //pipe dimensions
+      su2double pipeLength = config->Get1D3D_Pipe_Geo(0);
+      su2double pipeDiameter = config->Get1D3D_Pipe_Geo(1);
+      //valve characteristics
+      su2double plenumVolume = config->GetValve_Coeff(0);
+      su2double Kt = config->GetValve_Coeff(1);
+      //discritization factors
+      unsigned long xnodes = config->Get1D3D_Pipe_Disc(0);
+      unsigned long tnodes = config->Get1D3D_Pipe_Disc(1);
+
+      // coefficients
+      su2double a_co = (3-Gamma)/(2*Gamma-2);
+      su2double b_co = (Gamma+1)/(2*Gamma-2);
+
+      //reference pressure
+      su2double P_total_ref_1D = 101325;                          //reference total pressure
+      su2double T_total_ref_1D = 288.15;                          //reference total temperature
+      su2double a_ref_1D = sqrt(Gamma * Gas_Constant * T_total_ref_1D); //reference sound speed
+      su2double A = abs(Surface_Area_Total);
+      su2double Area = PI * 0.25 * (pipeDiameter)*(pipeDiameter);
+      su2double dx = pipeLength / (xnodes - 1.0);
+      su2double dt = deltaT / (tnodes - 1.0);
+
+      // arrays for computing flow in the pipe
+      vector<su2double> P(xnodes,0.0);
+      vector<su2double> T(xnodes,0.0);
+      vector<su2double> nextbeta(xnodes,0.0);
+      vector<su2double> nextlamda(xnodes,0.0);
+      vector<su2double> nextaA(xnodes,0.0);
+
+      // intermediate variables
+      su2double px_dx, qx_dx, tx_dx;
+      su2double p_u, p_a, p_G, p_lamda, p_aA;
+      su2double q_u, q_a, q_G, q_beta, q_aA;
+      su2double t_u, t_a, t_G, t_aA;
+      su2double tcurrent, tnext, t0current, pcurrent, pnext, p0next, p0current, mcurrent; // NOTE
+
+      su2double Tin = Surface_Temperature_Avg;
+      su2double Pin = Surface_Pressure_Avg;
+      su2double Uin = Surface_MassFlow_Total/(Pin/Tin/Gas_Constant)/abs(Surface_Area_Total);
+      
+      su2double ain = sqrt(Gamma*Gas_Constant*Tin);
+      su2double aAin = a_ref_1D*exp((Cp*log(Tin/T_total_ref_1D) - Gas_Constant*log(Pin/P_total_ref_1D)) / (2*Cp));
+      su2double T0in = Tin + 0.5*Uin*Uin/Cp;
+      su2double P0in = Pin*pow((Tin/T0in),(Gamma/(1-Gamma)));
+
 
       // initialize pipe and plenum condition at THE FIRST timestep
-      if (TimeIter == 0)
-      {
+      if (TimeIter == 0){
         // pipe initialization using compressor outlet condition
         for (unsigned long ixnode = 0; ixnode < xnodes; ixnode++){
           u_1D[ixnode] = Uin;
@@ -5326,18 +5325,21 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
             a_1D[ixnode] = (lamda_1D[ixnode] + beta_1D[ixnode])/2.0;
         }
       }
+      // calculate next p & T
+      T[1] = a_1D[1]*a_1D[1]/Gamma/Gas_Constant;
+      P[1] = P_total_ref_1D*pow((T[1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[1]/a_ref_1D),(2*Gamma/(1-Gamma)));
 
-    }
+      T[xnodes-1] = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
+      P[xnodes-1] = P_total_ref_1D*pow((T[xnodes-1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[xnodes-1]/a_ref_1D),(2*Gamma/(1-Gamma)));
+      
+      backpressure = P[1];
+      backtemperature = T[1];
 
-    // calculate next p & T
-    T[1] = a_1D[1]*a_1D[1]/Gamma/Gas_Constant;
-    P[1] = P_total_ref_1D*pow((T[1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[1]/a_ref_1D),(2*Gamma/(1-Gamma)));
+      /*--- Broadcast the new P and T at 3D boundary. ---*/
+      SU2_MPI::Bcast(&backpressure, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Bcast(&backtemperature, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    }       
 
-    T[xnodes-1] = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
-    P[xnodes-1] = P_total_ref_1D*pow((T[xnodes-1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[xnodes-1]/a_ref_1D),(2*Gamma/(1-Gamma)));
-    
-    backpressure = P[1];
-    backtemperature = T[1];
 
 }
 
