@@ -5042,7 +5042,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
                               CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker, 
                               su2double & backpressure, su2double & backtemperature ) {
-
+    //if(rank==MASTER_NODE) cout<<"BC_1D3D_Downstream"<<endl;                              
     // define some useful constants
     const su2double Gas_Constant      = config->GetGas_ConstantND();
     const su2double Cp = Gas_Constant*Gamma/(Gamma - 1);
@@ -5071,7 +5071,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
 
     auto flow_nodes = solver_container[FLOW_SOL]->GetNodes();
 
-    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    //SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
     for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
       
       auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5111,30 +5111,35 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
 
         /*--- compute the global sum ---*/
 
-        auto Allreduce = [](const su2double src, su2double dst) {
-          SU2_MPI::Allreduce(&src, &dst, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-        };
-
-        Allreduce(Surface_Area_Local, Surface_Area_Total);
-        Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total);
-        Allreduce(Surface_Temperature_Local, Surface_Temperature_Total);
-        Allreduce(Surface_Pressure_Local, Surface_Pressure_Total);
-
-        /*--- the area-average method is used ---*/
-        Weight = abs(Surface_Area_Total);
-
-        Surface_Temperature_Avg = Surface_Temperature_Total/Weight;
-        Surface_Pressure_Avg = Surface_Pressure_Total/Weight;
-
-
-        /*--- Dimensinal values ---*/
-        Surface_MassFlow_Total = Surface_MassFlow_Total * config->GetDensity_Ref() * config->GetVelocity_Ref();
-        Surface_Pressure_Avg = Surface_Pressure_Avg * config->GetPressure_Ref();
-        Surface_Temperature_Avg = Surface_Temperature_Avg * config->GetTemperature_Ref();
-
       }
     }
-    END_SU2_OMP_FOR
+    //END_SU2_OMP_FOR
+
+    auto Allreduce = [](const su2double &src, su2double &dst) {
+      SU2_MPI::Allreduce(&src, &dst, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    };
+
+    Allreduce(Surface_Area_Local, Surface_Area_Total);
+    Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total);
+    Allreduce(Surface_Temperature_Local, Surface_Temperature_Total);
+    Allreduce(Surface_Pressure_Local, Surface_Pressure_Total);
+    //cout<<"Surface_Pressure_Total "<<Surface_Pressure_Total
+    //<<" Surface_Temperature_Total "<<Surface_Temperature_Total
+    //<<" Surface_MassFlow_Total "<<Surface_MassFlow_Total<<endl;
+
+    /*--- the area-average method is used ---*/
+    Weight = abs(Surface_Area_Total);
+
+    Surface_Temperature_Avg = Surface_Temperature_Total/Weight;
+    Surface_Pressure_Avg = Surface_Pressure_Total/Weight;
+
+
+    /*--- Dimensinal values ---*/
+    Surface_MassFlow_Total = Surface_MassFlow_Total * config->GetDensity_Ref() * config->GetVelocity_Ref();
+    Surface_Pressure_Avg = Surface_Pressure_Avg * config->GetPressure_Ref();
+    Surface_Temperature_Avg = Surface_Temperature_Avg * config->GetTemperature_Ref();
+
+
 
     /*--- After the 3D boundary average, start computing the 1D zone ---*/
     // Get the unsteady time infos
@@ -5185,7 +5190,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
       su2double Tin = Surface_Temperature_Avg;
       su2double Pin = Surface_Pressure_Avg;
       su2double Uin = Surface_MassFlow_Total/(Pin/Tin/Gas_Constant)/abs(Surface_Area_Total);
-      
+      //cout<<"Tin "<<Tin<<" Surface_MassFlow_Total "<<Surface_MassFlow_Total<<endl;
       su2double ain = sqrt(Gamma*Gas_Constant*Tin);
       su2double aAin = a_ref_1D*exp((Cp*log(Tin/T_total_ref_1D) - Gas_Constant*log(Pin/P_total_ref_1D)) / (2*Cp));
       su2double T0in = Tin + 0.5*Uin*Uin/Cp;
@@ -5193,7 +5198,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
 
 
       // initialize pipe and plenum condition at THE FIRST timestep
-      if (TimeIter == 0){
+      if (TimeIter == 1){
         // pipe initialization using compressor outlet condition
         for (unsigned long ixnode = 0; ixnode < xnodes; ixnode++){
           u_1D[ixnode] = Uin;
@@ -5334,12 +5339,13 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
       
       backpressure = P[1];
       backtemperature = T[1];
-
+      
       /*--- Broadcast the new P and T at 3D boundary. ---*/
       SU2_MPI::Bcast(&backpressure, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       SU2_MPI::Bcast(&backtemperature, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     }       
-
+    
+    
 
 }
 
@@ -5826,6 +5832,19 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
     Jacobian_i[iVar] = new su2double[nVar];
   }
 
+  /*--- Compute first 1D3D if required, get the new P and T ---*/
+  su2double backpressure = 0, backtemperature = 0;
+
+  if (config->GetMethod_1D3D()){
+    if (config->GetKind_Data_Riemann(Marker_Tag) == STATIC_PRESSURE ){    
+      BC_1D3D_Downstream(geometry, solver_container,conv_numerics, visc_numerics,
+                          config, val_marker, backpressure, backtemperature);
+      /*--- nondimensionalize ---*/
+      backpressure /= config->GetPressure_Ref();
+      backtemperature /= config->GetTemperature_Ref();             
+    }
+  }
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
 
@@ -5978,17 +5997,14 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             Pressure_e = config->GetRiemann_Var1(Marker_Tag);
             Pressure_e /= config->GetPressure_Ref();
             Density_e = Density_i;
+            //cout<<"original Pressure_e "<<Pressure_e<<", Density_e "<<Density_e<<endl;
 
             if (config->GetMethod_1D3D()){
-              su2double backpressure, backtemperature;
-
-              BC_1D3D_Downstream(geometry, solver_container,conv_numerics, visc_numerics,
-                                  config, val_marker, backpressure, backtemperature);
-              backpressure /= config->GetPressure_Ref();
-              backtemperature /= config->GetTemperature_Ref();
               GetFluidModel()->SetTDState_PT(backpressure, backtemperature);
               Density_e = GetFluidModel()->GetDensity();
-              Pressure_e = backpressure;                              
+              Pressure_e = backpressure; 
+              
+              //cout<<"1D3D Pressure_e "<<Pressure_e<<", Density_e "<<Density_e<<endl;              
             }
 
             /* --- Compute the boundary state u_e --- */
