@@ -119,6 +119,8 @@ protected:
  
   /*--- 1D Solver Variables ---*/
   unsigned long XNODES = 1001;     /*!< \brief number of nodes */
+  su2double backpressure_1D3D;      /*!< \brief pressure to be imposed on 3D boundary */
+  su2double backtemperature_1D3D;   /*!< \brief temperature to be imposed on 3D boundary */
   vector<su2double> u_1D;          /*!< \brief velocity */
   vector<su2double> a_1D;          /*!< \brief sound speed */
   vector<su2double> beta_1D;       /*!< \brief characteristics */
@@ -563,18 +565,12 @@ public:
    * \param[in] conv_numerics - Description of the numerical method.
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in] backpressure - pressure to be assigned to 3D outlet.
-   * \param[in] backtemperature - temperature to be assigned to 3D outlet.
    */
   void BC_1D3D_Downstream(CGeometry *geometry,
                   CSolver **solver_container,
                   CNumerics *conv_numerics,
                   CNumerics *visc_numerics,
-                  CConfig *config,
-                  unsigned short val_marker,
-                  su2double & backpressure,
-                  su2double & backtemperature) final;
+                  CConfig *config) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna

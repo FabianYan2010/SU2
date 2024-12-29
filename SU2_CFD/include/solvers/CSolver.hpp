@@ -1043,18 +1043,12 @@ public:
    * \param[in] conv_numerics - Description of the numerical method.
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in] backpressure - pressure to be assigned to 3D outlet.
-   * \param[in] backtemperature - temperature to be assigned to 3D outlet.
    */
   inline virtual void BC_1D3D_Downstream(CGeometry *geometry,
                                  CSolver **solver_container,
                                  CNumerics *conv_numerics,
                                  CNumerics *visc_numerics,
-                                 CConfig *config,
-                                 unsigned short val_marker,
-                                 su2double & backpressure,
-                                 su2double & backtemperature) { }
+                                 CConfig *config) { }
 
   /*!
    * \brief A virtual member.
