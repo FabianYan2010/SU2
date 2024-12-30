@@ -248,6 +248,14 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                                 config_container[ZONE_0], TimeIter);
     }
 
+    bool unsteady = (config_container[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+             (config_container[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+
+    if ( unsteady ) {
+      if (config_container[iZone]->GetMethod_1D3D()){
+        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->BC_1D3D_Downstream(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], config_container[iZone]);
+      }
+    }
 
   }
 

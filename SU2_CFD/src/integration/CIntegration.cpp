@@ -101,9 +101,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- 1D3D Method:compute 1D pipe ---*/
   //unsigned short nMarker;
   //nMarker = config->GetnMarker_All();
-  if (config->GetMethod_1D3D()){
-    solver_container[MainSolver]->BC_1D3D_Downstream(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);     
-  }
+  //if (config->GetMethod_1D3D()){
+  //  solver_container[MainSolver]->BC_1D3D_Downstream(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);     
+  //}
 
   /*--- Weak boundary conditions ---*/
 

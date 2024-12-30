@@ -5038,10 +5038,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 }
 
 
-void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_container,
-                              CNumerics *conv_numerics, CNumerics *visc_numerics,
+void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_container,
                               CConfig *config) {
-    cout<<"rank "<<rank<<" BC_1D3D_Downstream "<<"iZone "<<config->GetiZone()<<endl;                              
+
     // define some useful constants
     const su2double Gas_Constant      = config->GetGas_ConstantND();
     const su2double Cp = Gas_Constant*Gamma/(Gamma - 1);
@@ -5068,7 +5067,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
     Enthalpy, Velocity[3] = {0.0}, TangVel[3], Vector[3], Velocity2, MassFlow, Density, Area,
     SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
-    auto flow_nodes = solver_container[FLOW_SOL]->GetNodes();
+    auto flow_nodes = solver_container->GetNodes();
 
     /*--- check if this rank owns a Riemann marker ---*/
 
@@ -5148,7 +5147,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
     Surface_Pressure_Avg = Surface_Pressure_Avg * config->GetPressure_Ref();
     Surface_Temperature_Avg = Surface_Temperature_Avg * config->GetTemperature_Ref();
 
-    cout<<"rank "<<rank<<" iZone "<<config->GetiZone()<<" Surface_Pressure_Avg "<<Surface_Pressure_Avg
+    if(rank==MASTER_NODE)cout<<"rank "<<rank<<" iZone "<<config->GetiZone()<<" Surface_Pressure_Avg "<<Surface_Pressure_Avg
     <<" Surface_Temperature_Avg "<<Surface_Temperature_Avg<<endl;
 
     /*--- After the 3D boundary average, start computing the 1D zone ---*/
@@ -5156,8 +5155,8 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
 
     /*--- we do the 1D computation on master node ---*/
     if (rank == MASTER_NODE){
-      
-      const unsigned long TimeIter   = config->GetTimeIter();
+
+      const unsigned long TimeIter   = config->GetTimeIter();      
       const su2double deltaT = config->GetDelta_UnstTimeND();
 
       //pipe dimensions
@@ -5182,7 +5181,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
       su2double Area = PI * 0.25 * (pipeDiameter)*(pipeDiameter);
       su2double dx = pipeLength / (xnodes - 1.0);
       su2double dt = deltaT / (tnodes - 1.0);
-
+      
       // arrays for computing flow in the pipe
       vector<su2double> P(xnodes,0.0);
       vector<su2double> T(xnodes,0.0);
@@ -5205,7 +5204,6 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
       su2double aAin = a_ref_1D*exp((Cp*log(Tin/T_total_ref_1D) - Gas_Constant*log(Pin/P_total_ref_1D)) / (2*Cp));
       su2double T0in = Tin + 0.5*Uin*Uin/Cp;
       su2double P0in = Pin*pow((Tin/T0in),(Gamma/(1-Gamma)));
-
 
       // initialize pipe and plenum condition at THE FIRST timestep
       if (TimeIter == 1){
@@ -5354,7 +5352,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver **solver_cont
       backpressure_1D3D /= config->GetPressure_Ref();
       backtemperature_1D3D /= config->GetTemperature_Ref(); 
 
-      cout<<"rank "<<rank<<" iZone "<<config->GetiZone()<<" backpressure_1D3D "<<backpressure_1D3D
+      if(rank==MASTER_NODE) cout<<"rank "<<rank<<" iZone "<<config->GetiZone()<<" backpressure_1D3D "<<backpressure_1D3D
       <<" backtemperature_1D3D "<<backtemperature_1D3D<<" Pressure_Ref "<<config->GetPressure_Ref()<<endl;
     }
 
@@ -5846,7 +5844,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
     invP_Tensor[iVar] = new su2double[nVar];
     Jacobian_i[iVar] = new su2double[nVar];
   }
-  cout<<"rank "<<rank<<" iZone "<<iZone<<" BC_TurboRiemann2 "<<endl;
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
 

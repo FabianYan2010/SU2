@@ -1040,14 +1040,10 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void BC_1D3D_Downstream(CGeometry *geometry,
-                                 CSolver **solver_container,
-                                 CNumerics *conv_numerics,
-                                 CNumerics *visc_numerics,
+                                 CSolver *solver_container,
                                  CConfig *config) { }
 
   /*!
