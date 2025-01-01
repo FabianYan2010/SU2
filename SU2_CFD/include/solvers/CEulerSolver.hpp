@@ -118,7 +118,6 @@ protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
  
   /*--- 1D Solver Variables ---*/
-  unsigned long TimeIter_1D = 0;   /*!< \brief time iter reference */
   unsigned long XNODES = 1001;     /*!< \brief number of nodes */
   su2double backpressure_1D3D;     /*!< \brief pressure to be imposed on 3D boundary */
   su2double backtemperature_1D3D;  /*!< \brief temperature to be imposed on 3D boundary */
