@@ -217,6 +217,7 @@ void CIteration::ComputeModalForce(CGeometry** geometry, CSolver*** solver, CCon
   su2double *Normal, ModeShape[3] = {0.0}, Disp[3] = {0.0};
   unsigned short nDim = geometry[MESH_0]->GetnDim();
   for (unsigned short iMode = 0; iMode < solver[MESH_0][MESH_SOL]->GetnMode(); iMode++) {
+    modalforce_allblades_local = 0;
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
   
       modalforce_local = 0;  

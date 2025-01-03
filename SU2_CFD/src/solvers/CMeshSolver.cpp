@@ -1653,7 +1653,7 @@ void CMeshSolver::ComputeModeShape_TWM(CGeometry *geometry, CConfig* config, uns
               //retrieve the modeshape for single blade
               modeshape = GetNodes()->GetBound_ModeShape(iPoint,iMode,iDim);
               //compute the angular frequency of the mode shape
-              omega = 2*PI_NUMBER*EigenFrq[iMode];
+              omega = EigenFrq[iMode];
               //compute the modeshape for the whole blade row in travelling wave mode
               if (TWM_ND == 0)
                 modeshape_TWM = modeshape;
