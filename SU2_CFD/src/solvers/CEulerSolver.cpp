@@ -177,6 +177,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- 1D Solver Variables ---*/
   // temporarily stored here, to be changed in the future
   // the 1D method works only on the master node 
+  XNODES = config->Get1D3D_Pipe_Disc(0);
   u_1D.resize(XNODES);          /*!< \brief velocity */
   a_1D.resize(XNODES);          /*!< \brief sound speed */
   beta_1D.resize(XNODES);       /*!< \brief characteristics */
@@ -5166,7 +5167,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
       su2double plenumVolume = config->GetValve_Coeff(0);
       su2double Kt = config->GetValve_Coeff(1);
       //discritization factors
-      unsigned long xnodes = config->Get1D3D_Pipe_Disc(0);
+      //unsigned long XNODES = config->Get1D3D_Pipe_Disc(0);
       unsigned long tnodes = config->Get1D3D_Pipe_Disc(1);
 
       // coefficients
@@ -5179,15 +5180,15 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
       su2double a_ref_1D = sqrt(Gamma * Gas_Constant * T_total_ref_1D); //reference sound speed
       su2double A = abs(Surface_Area_Total);
       su2double Area = PI * 0.25 * (pipeDiameter)*(pipeDiameter);
-      su2double dx = pipeLength / (xnodes - 1.0);
+      su2double dx = pipeLength / (XNODES - 1.0);
       su2double dt = deltaT / (tnodes - 1.0);
       
       // arrays for computing flow in the pipe
-      vector<su2double> P(xnodes,0.0);
-      vector<su2double> T(xnodes,0.0);
-      vector<su2double> nextbeta(xnodes,0.0);
-      vector<su2double> nextlamda(xnodes,0.0);
-      vector<su2double> nextaA(xnodes,0.0);
+      vector<su2double> P(XNODES,0.0);
+      vector<su2double> T(XNODES,0.0);
+      vector<su2double> nextbeta(XNODES,0.0);
+      vector<su2double> nextlamda(XNODES,0.0);
+      vector<su2double> nextaA(XNODES,0.0);
 
       // intermediate variables
       su2double px_dx, qx_dx, tx_dx;
@@ -5208,7 +5209,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
       // initialize pipe and plenum condition at THE FIRST timestep
       if (TimeIter == 1){
         // pipe initialization using compressor outlet condition
-        for (unsigned long ixnode = 0; ixnode < xnodes; ixnode++){
+        for (unsigned long ixnode = 0; ixnode < XNODES; ixnode++){
           u_1D[ixnode] = Uin;
           a_1D[ixnode] = ain;
           aA_1D[ixnode] = aAin;
@@ -5227,7 +5228,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
       for (unsigned long i = 0; i < tnodes; i++)
       {
         //Info << "Entropy wave" << endl;
-        for (unsigned long i4 = 1; i4 < (xnodes-1); i4++){
+        for (unsigned long i4 = 1; i4 < (XNODES-1); i4++){
             tx_dx = (beta_1D[i4]-lamda_1D[i4]) / (-(Gamma-1)*dx/dt + lamda_1D[i4-1] - lamda_1D[i4] + beta_1D[i4] - beta_1D[i4-1]);
             t_u = u_1D[i4-1] * tx_dx + (1 - tx_dx)*u_1D[i4];
             if (t_u >= 0)
@@ -5247,7 +5248,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
         }
 
         //Info << "left Riemann wave" << endl;
-        for (unsigned long i2 = 1; i2 < (xnodes-1); i2++){
+        for (unsigned long i2 = 1; i2 < (XNODES-1); i2++){
             px_dx = (b_co*lamda_1D[i2] - a_co*beta_1D[i2]) / (dx/dt - b_co*(lamda_1D[i2-1]-lamda_1D[i2]) + a_co*(beta_1D[i2-1] - beta_1D[i2]));
             p_u = u_1D[i2] + (u_1D[i2-1] - u_1D[i2]) * px_dx;
             p_a = a_1D[i2] + (a_1D[i2-1] - a_1D[i2]) * px_dx;
@@ -5269,7 +5270,7 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
         }
 
         //Info << "right Riemann wave" << endl;
-        for (unsigned long i3 = 1; i3 < (xnodes-1); i3++){
+        for (unsigned long i3 = 1; i3 < (XNODES-1); i3++){
             qx_dx = (b_co*beta_1D[i3] - a_co*lamda_1D[i3]) / (dx/dt - b_co*(beta_1D[i3+1]-beta_1D[i3]) + a_co*(lamda_1D[i3+1] - lamda_1D[i3]));
             q_u = u_1D[i3] + (u_1D[i3+1] - u_1D[i3]) * qx_dx;
             q_a = a_1D[i3] + (a_1D[i3+1] - a_1D[i3]) * qx_dx;
@@ -5292,45 +5293,45 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
 
         //Info << "boundary" << endl;
         // outlet boundary condition
-        tx_dx = (beta_1D[xnodes-1] - lamda_1D[xnodes-1])/(-(Gamma-1)*dx/dt+lamda_1D[xnodes-2]-lamda_1D[xnodes-1]+beta_1D[xnodes-1]-beta_1D[xnodes-2]);
-        t_u = u_1D[xnodes-2]*tx_dx + (1-tx_dx)*u_1D[xnodes-1];
-        px_dx = (b_co*lamda_1D[xnodes-1] - a_co*beta_1D[xnodes-1])/(dx/dt-b_co*(lamda_1D[xnodes-2]-lamda_1D[xnodes-1])+a_co*(beta_1D[xnodes-2]-beta_1D[xnodes-1]));
-        p_u = u_1D[xnodes-1] + (u_1D[xnodes-2]-u_1D[xnodes-1])*px_dx;
-        p_a = a_1D[xnodes-1] + (a_1D[xnodes-2]-a_1D[xnodes-1])*px_dx;
-        p_lamda = lamda_1D[xnodes-1] + (lamda_1D[xnodes-2]-lamda_1D[xnodes-1])*px_dx;
-        p_aA = aA_1D[xnodes-1] + (aA_1D[xnodes-2]-aA_1D[xnodes-1])*px_dx;
+        tx_dx = (beta_1D[XNODES-1] - lamda_1D[XNODES-1])/(-(Gamma-1)*dx/dt+lamda_1D[XNODES-2]-lamda_1D[XNODES-1]+beta_1D[XNODES-1]-beta_1D[XNODES-2]);
+        t_u = u_1D[XNODES-2]*tx_dx + (1-tx_dx)*u_1D[XNODES-1];
+        px_dx = (b_co*lamda_1D[XNODES-1] - a_co*beta_1D[XNODES-1])/(dx/dt-b_co*(lamda_1D[XNODES-2]-lamda_1D[XNODES-1])+a_co*(beta_1D[XNODES-2]-beta_1D[XNODES-1]));
+        p_u = u_1D[XNODES-1] + (u_1D[XNODES-2]-u_1D[XNODES-1])*px_dx;
+        p_a = a_1D[XNODES-1] + (a_1D[XNODES-2]-a_1D[XNODES-1])*px_dx;
+        p_lamda = lamda_1D[XNODES-1] + (lamda_1D[XNODES-2]-lamda_1D[XNODES-1])*px_dx;
+        p_aA = aA_1D[XNODES-1] + (aA_1D[XNODES-2]-aA_1D[XNODES-1])*px_dx;
         p_G = f * p_u * abs(p_u)/(2*pipeDiameter);
         if (t_u >= 0){
-            t_aA = aA_1D[xnodes-1] + tx_dx * (aA_1D[xnodes-2] - aA_1D[xnodes-1]);
-            t_a = a_1D[xnodes-1] + tx_dx * (a_1D[xnodes-2] - a_1D[xnodes-1]);
+            t_aA = aA_1D[XNODES-1] + tx_dx * (aA_1D[XNODES-2] - aA_1D[XNODES-1]);
+            t_a = a_1D[XNODES-1] + tx_dx * (a_1D[XNODES-2] - a_1D[XNODES-1]);
             t_G = f * t_u * abs(t_u)/(2*pipeDiameter);
-            nextaA[xnodes-1] = t_aA + t_aA*(Gamma-1)*dt*t_u*t_G/(2*t_a*t_a);
-            nextlamda[xnodes-1] = p_lamda + p_a*(nextaA[xnodes-1] - p_aA)/p_aA - 0.5*(Gamma-1)*(1-(Gamma-1)*p_u/p_a)*p_G*dt;
+            nextaA[XNODES-1] = t_aA + t_aA*(Gamma-1)*dt*t_u*t_G/(2*t_a*t_a);
+            nextlamda[XNODES-1] = p_lamda + p_a*(nextaA[XNODES-1] - p_aA)/p_aA - 0.5*(Gamma-1)*(1-(Gamma-1)*p_u/p_a)*p_G*dt;
 
-            tcurrent = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
-            pcurrent = P_total_ref_1D*pow((a_1D[xnodes-1]/aA_1D[xnodes-1]),(2*Gamma/(Gamma-1)));
-            t0current = tcurrent + 0.5*(u_1D[xnodes-1])*(u_1D[xnodes-1])/Cp;
-            p0current = pcurrent*pow((1+0.5*(Gamma-1)*(u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1])),(Gamma/(Gamma-1)));
-            mcurrent = pcurrent/Gas_Constant/tcurrent*Area*u_1D[xnodes-1];
+            tcurrent = a_1D[XNODES-1]*a_1D[XNODES-1]/Gamma/Gas_Constant;
+            pcurrent = P_total_ref_1D*pow((a_1D[XNODES-1]/aA_1D[XNODES-1]),(2*Gamma/(Gamma-1)));
+            t0current = tcurrent + 0.5*(u_1D[XNODES-1])*(u_1D[XNODES-1])/Cp;
+            p0current = pcurrent*pow((1+0.5*(Gamma-1)*(u_1D[XNODES-1]/a_1D[XNODES-1])*(u_1D[XNODES-1]/a_1D[XNODES-1])),(Gamma/(Gamma-1)));
+            mcurrent = pcurrent/Gas_Constant/tcurrent*Area*u_1D[XNODES-1];
             p0next = p0current + dt*Gamma*Gas_Constant*t0current*(mcurrent - sqrt((p0current-P_total_ref_1D)/Kt))/plenumVolume;
-            pnext = p0next/pow((1+0.5*(Gamma-1)*(u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1])),(Gamma/(Gamma-1)));
-            nextbeta[xnodes-1] = 2*nextaA[xnodes-1]*pow((pnext/P_total_ref_1D),((Gamma-1)/2/Gamma)) - nextlamda[xnodes-1];
+            pnext = p0next/pow((1+0.5*(Gamma-1)*(u_1D[XNODES-1]/a_1D[XNODES-1])*(u_1D[XNODES-1]/a_1D[XNODES-1])),(Gamma/(Gamma-1)));
+            nextbeta[XNODES-1] = 2*nextaA[XNODES-1]*pow((pnext/P_total_ref_1D),((Gamma-1)/2/Gamma)) - nextlamda[XNODES-1];
         }
         else{
-            tcurrent = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
-            pcurrent = P_total_ref_1D*pow((a_1D[xnodes-1]/aA_1D[xnodes-1]),(2*Gamma/(Gamma-1)));
-            t0current = tcurrent + 0.5*u_1D[xnodes-1]*u_1D[xnodes-1]/Cp;
-            p0current = pcurrent*pow((1+0.5*(Gamma-1)*(u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1])),(Gamma/(Gamma-1)));
-            mcurrent = pcurrent/Gas_Constant/tcurrent*Area*u_1D[xnodes-1];
+            tcurrent = a_1D[XNODES-1]*a_1D[XNODES-1]/Gamma/Gas_Constant;
+            pcurrent = P_total_ref_1D*pow((a_1D[XNODES-1]/aA_1D[XNODES-1]),(2*Gamma/(Gamma-1)));
+            t0current = tcurrent + 0.5*u_1D[XNODES-1]*u_1D[XNODES-1]/Cp;
+            p0current = pcurrent*pow((1+0.5*(Gamma-1)*(u_1D[XNODES-1]/a_1D[XNODES-1])*(u_1D[XNODES-1]/a_1D[XNODES-1])),(Gamma/(Gamma-1)));
+            mcurrent = pcurrent/Gas_Constant/tcurrent*Area*u_1D[XNODES-1];
             p0next = p0current + dt*Gamma*Gas_Constant*t0current*(mcurrent - sqrt((p0current-P_total_ref_1D)/Kt))/plenumVolume;
-            pnext = p0next/pow((1+0.5*(Gamma-1)*((u_1D[xnodes-1]/a_1D[xnodes-1])*(u_1D[xnodes-1]/a_1D[xnodes-1]))),(Gamma/(Gamma-1)));
+            pnext = p0next/pow((1+0.5*(Gamma-1)*((u_1D[XNODES-1]/a_1D[XNODES-1])*(u_1D[XNODES-1]/a_1D[XNODES-1]))),(Gamma/(Gamma-1)));
             tnext = tcurrent*pow((pcurrent/pnext),((1-Gamma)/Gamma));
-            nextaA[xnodes-1] = a_ref_1D*exp((Cp*log(tnext/T_total_ref_1D) - Gas_Constant*log(pnext/P_total_ref_1D))/2/Cp);
-            nextlamda[xnodes-1] = p_lamda + p_a*(nextaA[xnodes-1] - p_aA)/p_aA - 0.5*(Gamma-1)*(1-(Gamma-1)*p_u/p_a)*p_G*dt;
-            nextbeta[xnodes-1] = 2*nextaA[xnodes-1]*pow((pnext/P_total_ref_1D),((Gamma-1)/2/Gamma)) - nextlamda[xnodes-1];
+            nextaA[XNODES-1] = a_ref_1D*exp((Cp*log(tnext/T_total_ref_1D) - Gas_Constant*log(pnext/P_total_ref_1D))/2/Cp);
+            nextlamda[XNODES-1] = p_lamda + p_a*(nextaA[XNODES-1] - p_aA)/p_aA - 0.5*(Gamma-1)*(1-(Gamma-1)*p_u/p_a)*p_G*dt;
+            nextbeta[XNODES-1] = 2*nextaA[XNODES-1]*pow((pnext/P_total_ref_1D),((Gamma-1)/2/Gamma)) - nextlamda[XNODES-1];
         }
 
-        for (unsigned long ixnode = 1; ixnode<xnodes; ixnode++){
+        for (unsigned long ixnode = 1; ixnode<XNODES; ixnode++){
             lamda_1D[ixnode] = nextlamda[ixnode];
             beta_1D[ixnode] = nextbeta[ixnode];
             aA_1D[ixnode] = nextaA[ixnode];
@@ -5342,8 +5343,8 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
       T[1] = a_1D[1]*a_1D[1]/Gamma/Gas_Constant;
       P[1] = P_total_ref_1D*pow((T[1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[1]/a_ref_1D),(2*Gamma/(1-Gamma)));
 
-      T[xnodes-1] = a_1D[xnodes-1]*a_1D[xnodes-1]/Gamma/Gas_Constant;
-      P[xnodes-1] = P_total_ref_1D*pow((T[xnodes-1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[xnodes-1]/a_ref_1D),(2*Gamma/(1-Gamma)));
+      T[XNODES-1] = a_1D[XNODES-1]*a_1D[XNODES-1]/Gamma/Gas_Constant;
+      P[XNODES-1] = P_total_ref_1D*pow((T[XNODES-1]/T_total_ref_1D),(Gamma/(Gamma-1)))*pow((aA_1D[XNODES-1]/a_ref_1D),(2*Gamma/(1-Gamma)));
       
       backpressure_1D3D = P[1];
       backtemperature_1D3D = T[1];
