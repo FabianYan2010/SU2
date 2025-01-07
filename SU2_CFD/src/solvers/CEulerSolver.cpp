@@ -5148,6 +5148,9 @@ void CEulerSolver::BC_1D3D_Downstream(CGeometry *geometry, CSolver *solver_conta
     Surface_Pressure_Avg = Surface_Pressure_Avg * config->GetPressure_Ref();
     Surface_Temperature_Avg = Surface_Temperature_Avg * config->GetTemperature_Ref();
 
+    /*--- Note that the mass flow is minus because it flows out of the domain ---*/
+    Surface_MassFlow_Total = -Surface_MassFlow_Total;
+
     if(rank==MASTER_NODE)cout<<"rank "<<rank<<" iZone "<<config->GetiZone()<<" Surface_Pressure_Avg "<<Surface_Pressure_Avg
     <<" Surface_Temperature_Avg "<<Surface_Temperature_Avg<<endl;
 
