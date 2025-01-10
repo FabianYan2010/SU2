@@ -215,6 +215,31 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         if (target_geometry->nodes->GetDomain(target_iPoint)) {
           Coord_i = target_geometry->nodes->GetCoord(target_iPoint);
 
+          su2double rotCoord_i[3] = {0.0, 0.0, 0.0};
+
+          if (config[targetZone]->GetRotating_Frame() == YES) {
+            su2double Theta, Phi, Psi;
+            su2double Omega_i[3] = {0.0, 0.0, 0.0};
+            su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            const su2double zeros[3] = {0.0};
+            su2double dt = config[targetZone]->GetDelta_UnstTimeND();
+            unsigned long TimeIter = config[targetZone]->GetTimeIter();
+            for (iDim = 0; iDim < nDim; iDim++)
+              Omega_i[iDim] = config[targetZone]->GetRotation_Rate(iDim) / config[targetZone]->GetOmega_Ref();
+
+            Theta = Omega_i[0] * dt * TimeIter;
+            Phi = Omega_i[1] * dt * TimeIter;
+            Psi = Omega_i[2] * dt * TimeIter;
+            /*--- Compute the rotation matrix. Note that the implicit
+            ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+            /*--- Compute transformed point coordinates. ---*/
+            GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
+
+          } else {
+            for (iDim = 0; iDim < nDim; iDim++) rotCoord_i[iDim] = Coord_i[iDim];
+          }
           /*--- Brute force to find the closest donor_node ---*/
 
           mindist = 1E6;
@@ -223,7 +248,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
             Coord_j = DonorPoint_Coord[donor_iPoint];
 
-            dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+            dist = GeometryToolbox::Distance(nDim, rotCoord_i, Coord_j);
 
             if (dist < mindist) {
               mindist = dist;
@@ -490,13 +515,41 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             Target_nLinkedNodes, TargetPoint_Coord, nGlobalVertex_Target, target_iPoint, target_element);
         /*--- Brute force to find the closest donor_node ---*/
 
+        /*--- rotate the coordinate if relative frame is used ---*/
+        su2double rotCoord_i[3] = {0.0, 0.0, 0.0};
+
+        if (config[targetZone]->GetRotating_Frame() == YES) {
+          su2double Theta, Phi, Psi;
+          su2double Omega_i[3] = {0.0, 0.0, 0.0};
+          su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+          const su2double zeros[3] = {0.0};
+          su2double dt = config[targetZone]->GetDelta_UnstTimeND();
+          unsigned long TimeIter = config[targetZone]->GetTimeIter();
+          for (iDim = 0; iDim < nDim; iDim++)
+            Omega_i[iDim] = config[targetZone]->GetRotation_Rate(iDim) / config[targetZone]->GetOmega_Ref();
+
+          Theta = Omega_i[0] * dt * TimeIter;
+          Phi = Omega_i[1] * dt * TimeIter;
+          Psi = Omega_i[2] * dt * TimeIter;
+          /*--- Compute the rotation matrix. Note that the implicit
+          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+          GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+          /*--- Compute transformed point coordinates. ---*/
+          GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
+
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++) rotCoord_i[iDim] = Coord_i[iDim];
+        }
+
         mindist = 1E6;
         donor_StartIndex = 0;
 
         for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
           Coord_j = DonorPoint_Coord[donor_iPoint];
 
-          dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+          // dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+          dist = GeometryToolbox::Distance(nDim, rotCoord_i, Coord_j);
 
           if (dist < mindist) {
             mindist = dist;

@@ -31,6 +31,7 @@
 
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 CInterpolator::CInterpolator(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                              unsigned int jZone)
@@ -461,7 +462,32 @@ void CInterpolator::ReconstructBoundary_Extended(const CConfig* const* config, u
     if (geom->nodes->GetDomain(iPoint)) {
       Buffer_Send_GlobalPoint[nLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
 
-      for (iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord(nLocalVertex, iDim) = geom->nodes->GetCoord(iPoint, iDim);
+      if (config[val_zone]->GetRotating_Frame() == YES) {
+        const su2double* Coord_i = geom->nodes->GetCoord(iPoint);
+        su2double Theta, Phi, Psi;
+        su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, Omega_i[3] = {0.0, 0.0, 0.0};
+        su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+        const su2double zeros[3] = {0.0};
+        su2double dt = config[val_zone]->GetDelta_UnstTimeND();
+        unsigned long TimeIter = config[val_zone]->GetTimeIter();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Omega_i[iDim] = config[val_zone]->GetRotation_Rate(iDim) / config[val_zone]->GetOmega_Ref();
+
+        Theta = Omega_i[0] * dt * TimeIter;
+        Phi = Omega_i[1] * dt * TimeIter;
+        Psi = Omega_i[2] * dt * TimeIter;
+        /*--- Compute the rotation matrix. Note that the implicit
+        ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+        GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+        /*--- Compute transformed point coordinates. ---*/
+        GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
+
+        for (iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord(nLocalVertex, iDim) = rotCoord_i[iDim];
+
+      } else {
+        for (iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord(nLocalVertex, iDim) = geom->nodes->GetCoord(iPoint, iDim);
+      }
 
       // compute the number of linked neighbours nNodes for iPoint
       nNodes = 0;
