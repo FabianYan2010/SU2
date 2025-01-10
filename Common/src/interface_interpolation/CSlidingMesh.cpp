@@ -212,7 +212,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-        if (target_geometry->nodes->GetDomain(target_iPoint)) {
+        if (config[targetZone]->GetBoolRelFrame_SlidingPlane() && (config[targetZone]->GetRotating_Frame() == YES)) {
           Coord_i = target_geometry->nodes->GetCoord(target_iPoint);
 
           su2double rotCoord_i[3] = {0.0, 0.0, 0.0};
@@ -518,7 +518,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         /*--- rotate the coordinate if relative frame is used ---*/
         su2double rotCoord_i[3] = {0.0, 0.0, 0.0};
 
-        if (config[targetZone]->GetRotating_Frame() == YES) {
+        if (config[targetZone]->GetBoolRelFrame_SlidingPlane() && (config[targetZone]->GetRotating_Frame() == YES)) {
           su2double Theta, Phi, Psi;
           su2double Omega_i[3] = {0.0, 0.0, 0.0};
           su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};

@@ -462,7 +462,7 @@ void CInterpolator::ReconstructBoundary_Extended(const CConfig* const* config, u
     if (geom->nodes->GetDomain(iPoint)) {
       Buffer_Send_GlobalPoint[nLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
 
-      if (config[val_zone]->GetRotating_Frame() == YES) {
+      if (config[targetZone]->GetBoolRelFrame_SlidingPlane() && (config[targetZone]->GetRotating_Frame() == YES)) {
         const su2double* Coord_i = geom->nodes->GetCoord(iPoint);
         su2double Theta, Phi, Psi;
         su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, Omega_i[3] = {0.0, 0.0, 0.0};

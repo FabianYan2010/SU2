@@ -1054,6 +1054,7 @@ private:
   unsigned short *nSpan_iZones;     /*!< \brief number of span-wise sections for each zones */
   bool turbMixingPlane;             /*!< \brief option for turbulent mixingplane */
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
+  bool RelFrame_SLidingPlane;       /*!< \brief option for relative frame slidinglane */
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the Rotating Frame values */
   bool RampOutletPressure;          /*!< \brief option for ramping up or down the outlet pressure */
   su2double AverageMachLimit;           /*!< \brief option for turbulent mixingplane */
@@ -5208,6 +5209,12 @@ public:
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void) const { return (nMarker_Turbomachinery !=0);}
+
+  /*!
+   * \brief Verify if a sliding plane for relative frame is specified from config file.
+   * \return boolean.
+   */
+  bool GetBoolRelFrame_SlidingPlane(void) const { return (RelFrame_SLidingPlane !=0);}
 
   /*!
    * \brief number Turbomachinery blades computed using the pitch information.
